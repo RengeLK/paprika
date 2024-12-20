@@ -1,0 +1,14 @@
+{% extends "base.xhtml" %}
+
+{% block content %}
+    <p class="title">Welcome to ReNet!</p>
+    <p>Your lightweight portal to all kinds of stuff,
+    all on your mobile device in the right format.
+    </p>
+    <div class="quick-links">
+        <p>1. <a href="{{ url_for('downloads') }}">Downloads</a> - Apps and wallpapers for your device.</p>
+        <p>2. <a href="{{ url_for('news') }}">News</a> - The latest headlines, updated hourly.</p>
+        <p>3. <a href="{{ url_for('weather') }}">Weather</a> - Forecasts and current data for your area.</p>
+        <p>4. <a href="{{ url_for('xdos') }}">xDOS</a> - Easy directions for public transport.</p>
+    </div>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.xhtml" %}
+
+{% block content %}
+    <p class="title">News</p>
+    <p>The newest headlines available right now.</p>
+    <hr/>
+    <div>
+        {% for i in articles %}
+        <div class="article">
+            <b><a href="{{ i.link }}">{{ i.title }}</a></b><br/>
+            <div class="summary">{{ i.summary|safe }}</div>
+            <p class="meta"><i>Published at {{ i.published }}</i></p>
+        </div>
+        <hr/>
+        {% endfor %}
+    </div>
+    <p>Data received at {{ time }}</p>
+{% endblock %}

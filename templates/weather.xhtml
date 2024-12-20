@@ -1,0 +1,18 @@
+{% extends "base.xhtml" %}
+
+{% block content %}
+    <p class="title">Weather</p>
+    <p>The latest weather info, at your fingertips.</p><br/>
+    <p>Current || <a href="{{ url_for('forecast') }}">Forecast</a></p>
+    <div>
+        <b>Current weather in {{ location }}</b><br/>
+        <i>{{ weather['reqdate'] }}</i>
+        <img src="/static/img/wico/{{ weather['icon'] }}.png" alt="{{ weather['main'] }}"/>
+        <p><strong>{{ weather['temp'] }}</strong> ({{ weather['feels'] }}) /AQI {{ weather['aqi'] }}/</p>
+        <p>{{ weather['main'] }} ({{ weather['condition'] }})</p>
+        <p>P: {{ weather['pressure'] }}, H: {{ weather['humidity'] }}, clouds {{ weather['clouds'] }}</p>
+        <p>Wind: {{ weather['wind'] }} from {{ weather['direct'] }}</p><br/>
+        <p>Sunrise at {{ weather['sunrise'] }}</p>
+        <p>Sunset at {{ weather['sunset'] }}</p>
+    </div>
+{% endblock %}
