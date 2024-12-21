@@ -45,17 +45,19 @@ def render_xhtml(template_name, **context):
     resp = make_response(render_template(template_name, **context))
     resp.headers['X-Bara'] = 'pica'
     resp.content_type = 'application/xhtml+xml'
+    # resp.headers['Cache-Control'] = 'public, max-age=60'  # 1m
+    resp.headers['Cache-Control'] = 'no-cache'  # cache but revalidate
     return resp
 
 ############## Content ##############
 
 @app.errorhandler(404)
 def err404(error):
-    return render_template('404.xhtml'), 404
+    return render_xhtml('404.xhtml'), 404
 
 @app.errorhandler(500)
 def err500(error):
-    return render_template('500.xhtml'), 500
+    return render_xhtml('500.xhtml'), 500
 
 # Serve the home page
 @app.route("/")
@@ -109,7 +111,7 @@ def weather():
         'sunset': datetime.fromtimestamp(dat['sys']['sunset']).strftime('%H:%M')
     }
 
-    return render_template("weather.xhtml", title="Weather", weather=weather_info, location=loc)
+    return render_xhtml("weather.xhtml", title="Weather", weather=weather_info, location=loc)
 
 @app.route("/forecast")
 def forecast():
@@ -140,7 +142,7 @@ def forecast():
             'foretime': datetime.fromtimestamp(i['dt']).strftime('%H:%M')  # forecast data time
         })
 
-    return render_template("forecast.xhtml", title="Forecast", weather=weather_info, location=loc, time=ctime)
+    return render_xhtml("forecast.xhtml", title="Forecast", weather=weather_info, location=loc, time=ctime)
 
 # Serve the news section
 @app.route("/news")
@@ -152,17 +154,18 @@ def news():
 
     artlist = fetch_rss_feed(rssfeed, cnt)
     meta = fetch_rss_meta(rssfeed)
-    return render_template("news.xhtml", title="News", articles=artlist, rssmeta=meta, time=ctime)
+    return render_xhtml("news.xhtml", title="News", articles=artlist, rssmeta=meta, time=ctime)
 
 # Serve the xDOS (public transport) section (NOT IMPLEMENTED)
 @app.route("/xdos")
 def xdos():
     return 'not implemented yet'
 
-# Serve the xInfo (account) section (NOT IMPLEMENTED)
+# Serve the xInfo (account) section
 # TODO: bakalari a server status idk
+# Login code
 @app.route("/xinfo", methods=['GET', 'POST'])
-def xinfo():
+def xinfo_login():
     # User is attempting to login
     if request.method == 'POST':
         username = request.form.get('username')
@@ -171,24 +174,27 @@ def xinfo():
         # Authenticate user
         if username in users and users[username]['password'] == password:
             session['username'] = username  # Set session
-            return redirect(url_for('xinfo'))
+            return redirect(url_for('xinfo_home')), 303  # need status code set to 303 See Other
         else:
             abort(401)  # invalid username or password
-
-        session['username'] = request.form['username']
-        return redirect(url_for('index'))
     
-    # User is not logged in, serve login form
-    if 'username' not in session:
-        return render_template("login.xhtml", title="xInfo login")
+    return render_xhtml("login.xhtml", title="xInfo :: Login")
 
-    # User IS logged in, serve xInfo
-    return render_template("xinfo.xhtml", title="xInfo", session=session)
-    
+# Simple session clear (logout)
 @app.route('/logout')
 def logout():
     session.pop('username', None)  # Remove username from session
-    return redirect(url_for('xinfo'))
+    return redirect(url_for('xinfo_login'))
+
+# Serve the xInfo homepage (NOT IMPLEMENTED)
+@app.route("/xinfo/home", methods=['GET'])
+def xinfo_home():
+    # User is not logged in, serve login form
+    if 'username' not in session:
+        return redirect(url_for('xinfo_login'))
+
+    # User IS logged in, serve xInfo
+    return render_xhtml("xinfo.xhtml", title="xInfo :: Home", session=session)
 
 
 # Customize caching behaviour of CSS files
