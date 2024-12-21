@@ -3,12 +3,14 @@
 {% block content %}
     <p class="title">News</p>
     <p>The newest headlines available right now.</p>
-    <hr/>
+    <hr/><hr/>
     <div>
+        <b>{{ rssmeta['title'] }}</b>
+        <p class="meta"><i>Last updated on {{ rssmeta['date'] }}</i></p><br/>
         {% for i in articles %}
         <div class="article">
             <b><a href="{{ i.link }}">{{ i.title }}</a></b><br/>
-            <div class="summary">{{ i.summary|safe }}</div>
+            <div class="summary">{{ i.summary }}</div>
             <p class="meta"><i>Published at {{ i.published }}</i></p>
         </div>
         <hr/>

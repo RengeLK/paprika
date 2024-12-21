@@ -1,0 +1,11 @@
+{% extends "base.xhtml" %}
+
+{% block content %}
+    <p class="title">Downloads :: Wallpapers</p>
+    <p>Here, you can download various wallpapers for your device.</p>
+    <ul>
+        {% for item in list %}
+        <li><a href="/static/dls/img/{{ item['uri'] }}">{{ item['name'] }}</a></li>
+        {% endfor %}
+    </ul>
+{% endblock %}

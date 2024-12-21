@@ -1,0 +1,12 @@
+{% extends "base.xhtml" %}
+
+{% block content %}
+    <p class="title">Login to xInfo</p>
+    <p>xInfo is only available to registered users, and is currently invite-only.
+    You can login below.</p><br/>
+    <form method="post">
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Login</button>
+    </form>
+{% endblock %}

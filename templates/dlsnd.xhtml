@@ -1,0 +1,11 @@
+{% extends "base.xhtml" %}
+
+{% block content %}
+    <p class="title">Downloads :: Sounds</p>
+    <p>Here, you can download various sounds and music to your device.</p>
+    <ul>
+        {% for item in list %}
+        <li><a href="/static/dls/snd/{{ item['uri'] }}">{{ item['name'] }}</a></li>
+        {% endfor %}
+    </ul>
+{% endblock %}
