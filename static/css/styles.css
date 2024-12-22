@@ -64,8 +64,14 @@ img {
   color: gray;
 }
 
-hr {
+hr.solid {
   border: none;
-  border-top: 1px solid #ccc;
+  border-top: 1px solid #989898;
+  margin: 10px 0;
+}
+
+hr.dotted {
+  border: none;
+  border-top: 2px dotted #989898;
   margin: 10px 0;
 }

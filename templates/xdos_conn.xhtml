@@ -1,0 +1,21 @@
+{% extends "base.xhtml" %}
+
+{% block content %}
+    <p class="title">xDOS Connections</p>
+    <p>Current time: {{ time }}</p>
+    <p>Connections from <i>{{ aunn }}</i> to <i>{{ komano }}</i></p><hr class="solid"/><hr class="solid"/>
+    <div>
+        {% for i in conns %}
+        <b>Spojení trvá {{ i.timel }}</b><hr class="dotted"/><br/>
+
+        {% for spoj in i.spoje %}
+        <p>{{ spoj.odjezd }} {{ spoj.odstan }} {{ spoj.odnast }}</p>
+        <b>{{ spoj.type }} {{ spoj.line }}</b>
+        <p>{{ spoj.prijezd }} {{ spoj.pristan }} {{ spoj.prinast }}</p>
+        <i>Zpoždění {{ spoj.delay }}</i><hr class="dotted"/>
+
+        {% endfor %}<hr class="solid"/>
+        {% endfor %}<hr class="solid"/>
+    </div>
+    <p>Data fetched from CRWS at {{ time }}</p>
+{% endblock %}

@@ -3,7 +3,7 @@
 {% block content %}
     <p class="title">News</p>
     <p>The newest headlines available right now.</p>
-    <hr/><hr/>
+    <hr class="solid"/><hr class="solid"/>
     <div>
         <b>{{ rssmeta['title'] }}</b>
         <p class="meta"><i>Last updated on {{ rssmeta['date'] }}</i></p><br/>
@@ -13,7 +13,7 @@
             <div class="summary">{{ i.summary }}</div>
             <p class="meta"><i>Published at {{ i.published }}</i></p>
         </div>
-        <hr/>
+        <hr class="solid"/>
         {% endfor %}
     </div>
     <p>Data received at {{ time }}</p>

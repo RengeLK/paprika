@@ -1,0 +1,18 @@
+{% extends "base.xhtml" %}
+
+{% block content %}
+    <p class="title">xDOS</p>
+    <p>It's like IDOS, but on XHTML! idfk</p><hr class="solid"/>
+    <b>Connection lookup (COMBID is PID)</b>
+    <form method="post" action="{{ url_for('xdos_conn') }}">
+        <input type="text" name="from" placeholder="From:" required="required"/>
+        <input type="text" name="to" placeholder="To:" required="required"/>
+        <button type="submit">i fucking love placeholders</button>
+    </form><br/>
+    <b>Departures lookup</b>
+    <form method="post" action="{{ url_for('xdos_dep') }}">
+        <input type="text" name="from" placeholder="From:" required="required"/>
+        <!-- <input type="text" name="to" placeholder="To:"/> -->
+        <button type="submit">i fucking HATE placeholders</button>
+    </form>
+{% endblock %}

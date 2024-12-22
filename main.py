@@ -8,11 +8,22 @@ from datetime import datetime
 from time import mktime
 import requests
 import feedparser
-from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users
+from urllib.parse import quote_plus
+from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_userid, crws_userdesc
 app = Flask(__name__)
 app.secret_key = sessionkey
 
 ############## Helper functions ##############
+
+# Format delays
+def format_delays(delay):
+    if delay == -1:
+        yuuka = "neznámé"
+    elif delay == -2:
+        yuuka = "nelze zjistit"
+    else:
+        yuuka = str(delay) + ' min'
+    return yuuka
 
 # Format data from RSS feeds for display
 def fetch_rss_feed(url, cnt):
@@ -113,7 +124,7 @@ def weather():
 
     return render_xhtml("weather.xhtml", title="Weather", weather=weather_info, location=loc)
 
-@app.route("/forecast")
+@app.route("/weather/forecast")
 def forecast():
     # TODO: Actual location grabbing or something idk
     lat = str(50.0874654)
@@ -145,6 +156,7 @@ def forecast():
     return render_xhtml("forecast.xhtml", title="Forecast", weather=weather_info, location=loc, time=ctime)
 
 # Serve the news section
+#TODO: page system
 @app.route("/news")
 def news():
     ctime = datetime.now().strftime('%H:%M:%S')
@@ -156,13 +168,82 @@ def news():
     meta = fetch_rss_meta(rssfeed)
     return render_xhtml("news.xhtml", title="News", articles=artlist, rssmeta=meta, time=ctime)
 
-# Serve the xDOS (public transport) section (NOT IMPLEMENTED)
+# Serve the xDOS (public transport) section
 @app.route("/xdos")
 def xdos():
-    return 'not implemented yet'
+    return render_xhtml("xdos.xhtml", title="xDOS")
+
+@app.route("/xdos/conn", methods=['POST'])
+def xdos_conn():
+    connfrom = quote_plus(request.form.get('from'))
+    connto = quote_plus(request.form.get('to'))
+    cnt = 3
+    r = requests.get(f"https://ext.crws.cz/api/PID/connections?from={connfrom}&to={connto}&maxCount={cnt}&userId={crws_userid}&userDesc={crws_userdesc}&lang=0")  # 0 = CZ, 1 = EN
+    dat = r.json()
+    conninfo = []
+
+    for i in dat['connInfo']['connections']:
+        sanae = {
+        'timel': i['timeLength'],
+        'spoje': []
+        }
+
+        for train in i['trains']:
+            '''
+            Nevim proc, ale CHAPS je tak retardovanej ze nastupiste v 'route'
+            pise pouze a jenom do fixedCodes a NE do stand, jako to dela u odjezdu,
+            takze musim samozrejme napsat for loop abych nasel nastupiste v podelanym
+            listu kde je specificky desc jako nastupiste.
+            '''
+            for i in train['trainData']['route'][0]['fixedCodes']:
+                if i['desc'] == "nástupiště":
+                    odnast = i['text']
+            for i in train['trainData']['route'][1]['fixedCodes']:
+                if i['desc'] == "nástupiště":
+                    prinast = i['text']
+            
+            sanae['spoje'].append({
+                'line': train['trainData']['info']['num1'],
+                'type': train['trainData']['info']['type'],
+                'delay': format_delays(train['delay']),
+                'odjezd': str(train['dateTime1'])[-5:],
+                'odstan': train['trainData']['route'][0]['station']['name'],
+                'odnast': odnast,
+                'prijezd': str(train['dateTime2'])[-5:],
+                'pristan': train['trainData']['route'][1]['station']['name'],
+                'prinast': prinast
+            })
+
+        conninfo.append(sanae)
+
+    truefrom = dat['fromObjects'][0]['timetableObject']['item']['name']
+    trueto = dat['toObjects'][0]['timetableObject']['item']['name']
+    ctime = datetime.now().strftime('%H:%M:%S')
+    return render_xhtml("xdos_conn.xhtml", title="xDOS conns", conns=conninfo, aunn=truefrom, komano=trueto, time=ctime)
+
+@app.route("/xdos/dep", methods=['POST'])
+def xdos_dep():
+    connfrom = quote_plus(request.form.get('from'))
+    cnt = 5
+    r = requests.get(f"https://ext.crws.cz/api/PID/departures?from={connfrom}&maxCount={cnt}&userId={crws_userid}&userDesc={crws_userdesc}&lang=0")  # 0 = CZ, 1 = EN
+    dat = r.json()
+    depinfo = []
+
+    for i in dat['trains']:
+        depinfo.append({
+            'line': str(i['train']['num1']),
+            'type': i['train']['type'],
+            'direction': i['stationTrainEnd']['name'],
+            'platform': i['stand'],
+            'deptime': i['dateTime1'],  # nicely formatted timestamp, thx CHAPS
+            'delay': format_delays(i['delay'])
+        })
+
+    truefrom = dat['fromObjects']['timetableObject']['item']['name']
+    ctime = datetime.now().strftime('%H:%M:%S')
+    return render_xhtml("xdos_dep.xhtml", title="xDOS deps", deps=depinfo, aunn=truefrom, time=ctime)
 
 # Serve the xInfo (account) section
-# TODO: bakalari a server status idk
 # Login code
 @app.route("/xinfo", methods=['GET', 'POST'])
 def xinfo_login():
@@ -178,7 +259,7 @@ def xinfo_login():
         else:
             abort(401)  # invalid username or password
     
-    return render_xhtml("login.xhtml", title="xInfo :: Login")
+    return render_xhtml("xinfo_login.xhtml", title="xInfo :: Login")
 
 # Simple session clear (logout)
 @app.route('/logout')
@@ -187,6 +268,7 @@ def logout():
     return redirect(url_for('xinfo_login'))
 
 # Serve the xInfo homepage (NOT IMPLEMENTED)
+# TODO: bakalari a server status
 @app.route("/xinfo/home", methods=['GET'])
 def xinfo_home():
     # User is not logged in, serve login form
