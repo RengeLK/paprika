@@ -1,4 +1,6 @@
 owmkey = "8634fds683f43dfs468"  # OpenWeatherMap API key
+crws_userid = "GHB4534FDG-GFHGB45GH5D4HG"  # needed for xDOS
+crws_userdesc = "cz.mafra.jizdnirady"
 sessionkey = "somerandomstring"  # used for encrypting session cookies
 
 jarlist = [  # manual list of all jars present in /dls/java
