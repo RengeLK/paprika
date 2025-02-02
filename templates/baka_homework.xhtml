@@ -1,8 +1,7 @@
 {% extends "base.xhtml" %}
 
 {% block content %}
-    <p class="title">Domaci ukoly</p>
-    <p>Header</p><hr class="solid"/>
+    <p class="title">Domaci ukoly</p><hr class="solid"/>
     <div>
         {% for i in hw %}
         <b>{{ i.teacher }} - {{ i.class }}/{{ i.group }}</b>

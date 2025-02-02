@@ -242,14 +242,65 @@ def baka_timetable():
     if 'username' not in session:
         abort(404)
 
-    kourin = users[session['username']]
-    toukn = bakatoken_get(kourin['username'])
-    if toukn:
-        print(f"haha {kourin}")
-    else:
-        print("fail!")
+    yukari = bakatoken_get(session['username'])
+    r = requests.get(f"{bakaurl}/api/3/timetable/actual?date=2025-02-03", headers=yukari)
+    days_map = {1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday'}
+    hour_map = []
+    parsed_data = {'days': {}, 'cycle': 'Unknown'}
+    data = r.json()
 
-    return render_xhtml("baka_timetable.xhtml", title="Baka :: Rozvrh")
+    for i in data['Hours']:
+        hour_map.append({
+            'id': i['Caption'],
+            'start': i['BeginTime'],
+            'end': i['EndTime']
+        })
+
+    # Create a lookup for types of content
+    hours = {hour['Id']: hour['Caption'] for hour in data.get('Hours', [])}
+    subjects = {sub['Id']: sub['Abbrev'] for sub in data.get('Subjects', [])}
+    teachers = {t['Id']: t['Name'] for t in data.get('Teachers', [])}
+    rooms = {r['Id']: r['Abbrev'] for r in data.get('Rooms', [])}
+    classes = {c['Id']: c['Abbrev'] for c in data.get('Groups', [])}
+    
+    for day in data['Days']:
+        day_of_week = day['DayOfWeek']
+        if day_of_week not in days_map:
+            continue  # Skip if it's not a Monday-Friday schedule
+        
+        parsed_data['days'][day_of_week - 1] = {
+            'name': days_map[day_of_week],
+            'atoms': []
+        }
+        
+        for atom in day['Atoms']:
+            if atom['Change']:  # it is time to celebrate
+                parsed_data['days'][day_of_week - 1]['atoms'].append({
+                    'change': True,
+                    'type': atom['Change']['ChangeType'],
+                    'desc': atom['Change']['Description']
+                })
+                continue
+            
+            hour_id = atom['HourId']
+            subject_id = atom['SubjectId']
+            teacher_id = atom['TeacherId']
+            room_id = atom['RoomId']
+            class_id = atom['GroupIds'][0] if atom['GroupIds'] else None
+            
+            parsed_data['days'][day_of_week - 1]['atoms'].append({
+                'change': False,
+                'id': hours.get(hour_id, 'Unknown'),
+                'name': subjects.get(subject_id, 'Unknown'),
+                'room': rooms.get(room_id, 'Unknown'),
+                'teacher': teachers.get(teacher_id, 'Unknown'),
+                'class': classes.get(class_id, 'Unknown')
+            })
+    parsed_data['cycle'] = data['Cycles'][0]['Abbrev']
+
+    print(hour_map)
+    ctime = datetime.now().strftime('%H:%M:%S')
+    return render_xhtml("baka_timetable.xhtml", title="Baka :: Rozvrh", data=parsed_data, map=hour_map, time=ctime)
 
 @app.route("/xinfo/baka/grades")
 def baka_grades():
