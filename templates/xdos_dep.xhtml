@@ -5,13 +5,12 @@
     <p>Departures from <i>{{ aunn }}</i></p><hr class="solid"/>
     <div>
         {% for i in deps %}
-
         <b>{{ i.type }} {{ i.line }}</b>
         <p>Směr {{ i.direction }} z nást. {{ i.platform }}</p>
-        <p>Odjezd v čase {{ i.deptime }}</p>
-        <i>Zpoždění {{ i.delay }}</i><br/><br/>
-
-        {% endfor %}<br/><br/>
+        <p>Odjezd v {{ i.deptime }}</p>
+        <i>Zpoždění {{ i.delay }}</i>
+        <hr class="dotted"/>
+        {% endfor %}<hr class="solid"/>
     </div>
     <p>Data fetched from CRWS at {{ time }}</p>
 {% endblock %}

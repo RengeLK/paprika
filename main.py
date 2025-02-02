@@ -9,7 +9,9 @@ from time import mktime
 import requests
 import feedparser
 from urllib.parse import quote_plus
-from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_userid, crws_userdesc
+from openai import OpenAI
+from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_userid, crws_userdesc, crws_combid, bakaurl, openaikey, wlat, wlon, wloc
+gpt = OpenAI(api_key=openaikey)
 app = Flask(__name__)
 app.secret_key = sessionkey
 
@@ -62,13 +64,17 @@ def render_xhtml(template_name, **context):
 
 ############## Content ##############
 
+@app.errorhandler(401)
+def err401(error):
+    return render_xhtml('401.xhtml', title="Unauthorized"), 401
+
 @app.errorhandler(404)
 def err404(error):
-    return render_xhtml('404.xhtml'), 404
+    return render_xhtml('404.xhtml', title="Page Not Found"), 404
 
 @app.errorhandler(500)
 def err500(error):
-    return render_xhtml('500.xhtml'), 500
+    return render_xhtml('500.xhtml', title="Server Error"), 500
 
 # Serve the home page
 @app.route("/")
@@ -96,9 +102,9 @@ def dlsnd():
 @app.route("/weather")
 def weather():
     # TODO: Actual location grabbing or something idk
-    lat = str(50.0874654)
-    lon = str(14.4212535)
-    loc = 'Gensokyo'
+    lat = wlat
+    lon = wlon
+    loc = wloc
 
     get = requests.get(f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={owmkey}&units=metric")
     air = requests.get(f"https://api.openweathermap.org/data/2.5/air_pollution?lat={lat}&lon={lon}&appid={owmkey}")
@@ -127,9 +133,9 @@ def weather():
 @app.route("/weather/forecast")
 def forecast():
     # TODO: Actual location grabbing or something idk
-    lat = str(50.0874654)
-    lon = str(14.4212535)
-    loc = 'Gensokyo'
+    lat = wlat
+    lon = wlon
+    loc = wloc
     ctime = datetime.now().strftime('%H:%M:%S')
     cnt = 8  # amount of forecast data in timestamps (3-hour difference, 8 equals 24hrs of data)
 
@@ -161,8 +167,7 @@ def forecast():
 def news():
     ctime = datetime.now().strftime('%H:%M:%S')
     cnt = 10
-    respecttheaya = 'https://bunbunmaru.news/rss'
-    rssfeed = f'https://rss.lukynet.com/reuters/technology?key=paprika&limit={cnt}'
+    rssfeed = f'https://rss.lukynet.com/reuters/technology?key=paprika&limit={cnt}'  # RSSHub
 
     artlist = fetch_rss_feed(rssfeed, cnt)
     meta = fetch_rss_meta(rssfeed)
@@ -178,7 +183,7 @@ def xdos_conn():
     connfrom = quote_plus(request.form.get('from'))
     connto = quote_plus(request.form.get('to'))
     cnt = 3
-    r = requests.get(f"https://ext.crws.cz/api/PID/connections?from={connfrom}&to={connto}&maxCount={cnt}&userId={crws_userid}&userDesc={crws_userdesc}&lang=0")  # 0 = CZ, 1 = EN
+    r = requests.get(f"https://ext.crws.cz/api/{crws_combid}/connections?from={connfrom}&to={connto}&maxCount={cnt}&userId={crws_userid}&userDesc={crws_userdesc}&lang=0")  # 0 = CZ, 1 = EN
     dat = r.json()
     conninfo = []
 
@@ -224,8 +229,8 @@ def xdos_conn():
 @app.route("/xdos/dep", methods=['POST'])
 def xdos_dep():
     connfrom = quote_plus(request.form.get('from'))
-    cnt = 5
-    r = requests.get(f"https://ext.crws.cz/api/PID/departures?from={connfrom}&maxCount={cnt}&userId={crws_userid}&userDesc={crws_userdesc}&lang=0")  # 0 = CZ, 1 = EN
+    cnt = 10
+    r = requests.get(f"https://ext.crws.cz/api/{crws_combid}/departures?from={connfrom}&maxCount={cnt}&userId={crws_userid}&userDesc={crws_userdesc}&lang=0")  # 0 = CZ, 1 = EN
     dat = r.json()
     depinfo = []
 
@@ -235,7 +240,7 @@ def xdos_dep():
             'type': i['train']['type'],
             'direction': i['stationTrainEnd']['name'],
             'platform': i['stand'],
-            'deptime': i['dateTime1'],  # nicely formatted timestamp, thx CHAPS
+            'deptime': str(i['dateTime1'])[-5:],  # nicely formatted timestamp, thx CHAPS
             'delay': format_delays(i['delay'])
         })
 
@@ -262,21 +267,60 @@ def xinfo_login():
     return render_xhtml("xinfo_login.xhtml", title="xInfo :: Login")
 
 # Simple session clear (logout)
-@app.route('/logout')
+@app.route('/xinfo/logout')
 def logout():
     session.pop('username', None)  # Remove username from session
     return redirect(url_for('xinfo_login'))
 
-# Serve the xInfo homepage (NOT IMPLEMENTED)
+# Serve the xInfo homepage
 # TODO: bakalari a server status
 @app.route("/xinfo/home", methods=['GET'])
 def xinfo_home():
     # User is not logged in, serve login form
     if 'username' not in session:
+        # abort(404)
         return redirect(url_for('xinfo_login'))
 
     # User IS logged in, serve xInfo
     return render_xhtml("xinfo.xhtml", title="xInfo :: Home", session=session)
+
+@app.route("/xinfo/baka/timetable")
+def baka_timetable():
+    # User is not logged in, serve fake 404
+    if 'username' not in session:
+        abort(404)
+
+    abort(500)  # NOT IMPLEMENTED
+
+@app.route("/xinfo/patchai", methods=['GET', 'POST'])
+def patchai():
+    # User is not logged in, serve fake 404
+    if 'username' not in session:
+        abort(404)
+
+    if request.method == 'POST':
+        youmu = {'amt': 0, 'msg': 'An error occured!'}
+        usrmsg = request.form.get('message')
+
+        compl = gpt.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "developer",
+                    "content": "You are a helpful assistant called Patchouli Knowledge."
+                },
+                {
+                    "role": "user",
+                    "content": usrmsg
+                }
+            ]
+        )
+        youmu['amt'] = compl.usage.total_tokens
+        youmu['msg'] = compl.choices[0].message
+
+        return render_xhtml("patchai.xhtml", title="xInfo :: ChatGPT", session=session, resp=youmu)
+
+    return render_xhtml("patchai.xhtml", title="xInfo :: ChatGPT", session=session)
 
 
 # Customize caching behaviour of CSS files
