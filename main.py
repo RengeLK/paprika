@@ -1,80 +1,31 @@
-##########################
-## cool paprika program ##
-## main.py - req parts  ##
-## -renge 2024          ##
-##########################
-from flask import Flask, render_template, send_from_directory, abort, redirect, make_response, url_for, request, session, redirect
-from datetime import datetime
-from time import mktime
+################################
+## cool paprika program       ##
+## main.py - main code        ##
+## -renge 2024                ##
+################################
+from flask import Flask, send_from_directory, abort, redirect, url_for, request, session, redirect
+from datetime import datetime, timezone, timedelta
 import requests
-import feedparser
 from urllib.parse import quote_plus
 from openai import OpenAI
 from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_userid, crws_userdesc, crws_combid, bakaurl, openaikey, wlat, wlon, wloc
+from helpers import render_xhtml, format_delays, fetch_rss_feed, fetch_rss_meta, bakatoken_get
 gpt = OpenAI(api_key=openaikey)
 app = Flask(__name__)
 app.secret_key = sessionkey
-
-############## Helper functions ##############
-
-# Format delays
-def format_delays(delay):
-    if delay == -1:
-        yuuka = "neznámé"
-    elif delay == -2:
-        yuuka = "nelze zjistit"
-    else:
-        yuuka = str(delay) + ' min'
-    return yuuka
-
-# Format data from RSS feeds for display
-def fetch_rss_feed(url, cnt):
-    feed = feedparser.parse(url)
-    articles = []
-    marisa = cnt
-
-    for entry in feed.entries:
-        if marisa == 0:
-            break
-        articles.append({
-            "title": entry.title,
-            "link": entry.link,
-            "summary": entry.summary if "summary" in entry else "",
-            "published": datetime.fromtimestamp(int(mktime(entry.published_parsed))).strftime('%d/%m/%Y %H:%M:%S') if "published_parsed" in entry else "an unknown date"  # I am sorry for creating this monstrosity
-        })
-        marisa -= 1
-    return articles
-
-def fetch_rss_meta(url):
-    d = feedparser.parse(url)
-    meta = {
-        'title': d.feed.title,
-        'date': datetime.fromtimestamp(int(mktime(d.feed.updated_parsed))).strftime('%d/%m/%Y %H:%M:%S')
-    }
-    return meta
-
-# Format the response correctly
-def render_xhtml(template_name, **context):
-    resp = make_response(render_template(template_name, **context))
-    resp.headers['X-Bara'] = 'pica'
-    resp.content_type = 'application/xhtml+xml'
-    # resp.headers['Cache-Control'] = 'public, max-age=60'  # 1m
-    resp.headers['Cache-Control'] = 'no-cache'  # cache but revalidate
-    return resp
-
-############## Content ##############
+tz_offset = timezone(timedelta(hours=1))
 
 @app.errorhandler(401)
 def err401(error):
-    return render_xhtml('401.xhtml', title="Unauthorized"), 401
+    return render_xhtml('401.xhtml', title="Unauthorized", error=error), 401
 
 @app.errorhandler(404)
 def err404(error):
-    return render_xhtml('404.xhtml', title="Page Not Found"), 404
+    return render_xhtml('404.xhtml', title="Page Not Found", error=error), 404
 
 @app.errorhandler(500)
 def err500(error):
-    return render_xhtml('500.xhtml', title="Server Error"), 500
+    return render_xhtml('500.xhtml', title="Server Error", error=error), 500
 
 # Serve the home page
 @app.route("/")
@@ -282,15 +233,76 @@ def xinfo_home():
         return redirect(url_for('xinfo_login'))
 
     # User IS logged in, serve xInfo
-    return render_xhtml("xinfo.xhtml", title="xInfo :: Home", session=session)
+    return render_xhtml("xinfo.xhtml", title="xInfo :: Home", session=users[session['username']])
 
+# Bakalari code
 @app.route("/xinfo/baka/timetable")
 def baka_timetable():
     # User is not logged in, serve fake 404
     if 'username' not in session:
         abort(404)
 
-    abort(500)  # NOT IMPLEMENTED
+    kourin = users[session['username']]
+    toukn = bakatoken_get(kourin['username'])
+    if toukn:
+        print(f"haha {kourin}")
+    else:
+        print("fail!")
+
+    return render_xhtml("baka_timetable.xhtml", title="Baka :: Rozvrh")
+
+@app.route("/xinfo/baka/grades")
+def baka_grades():
+    # User is not logged in, serve fake 404
+    if 'username' not in session:
+        abort(404)
+
+    # Actual code goes here
+
+    return render_xhtml("baka_grades.xhtml", title="Baka :: Znamky")
+
+@app.route("/xinfo/baka/homework")
+def baka_homework():
+    # User is not logged in, serve fake 404
+    if 'username' not in session:
+        abort(404)
+
+    yukari = bakatoken_get(session['username'])
+    r = requests.get(f"{bakaurl}/api/3/homeworks", headers=yukari)
+    dat = r.json()
+    hwinfo = []
+
+    for i in dat['Homeworks']:
+        hwinfo.append({
+            'id': i['ID'],
+            'start': datetime.strptime(i['DateStart'], "%Y-%m-%dT%H:%M:%S%z").strftime("%d.%m.%Y %H:%M"),
+            'end': datetime.strptime(i['DateEnd'], "%Y-%m-%dT%H:%M:%S%z").strftime("%d.%m.%Y %H:%M"),
+            'msg': i['Content'],
+            'done': i['Done'],
+            'closed': i['Closed'],
+            'finished': i['Finished'],
+            'class': i['Class']['Abbrev'],
+            'group': i['Group']['Abbrev'],
+            'teacher': i['Teacher']['Name']
+        })
+
+    ctime = datetime.now().strftime('%H:%M:%S')
+    return render_xhtml("baka_homework.xhtml", title="Baka :: Ukoly", hw=hwinfo, time=ctime)
+
+@app.route("/xinfo/baka/homework/finish/<hw_id>", methods=["PUT"])
+def finish_homework(hw_id):
+    # User is not logged in, serve fake 404
+    if 'username' not in session:
+        abort(404)
+
+    yukari = bakatoken_get(session['username'])
+    r = requests.put(f"{bakaurl}/api/3/homeworks/{hw_id}/student-done/true", headers=yukari)
+
+    if r.status_code == 200:
+        return "", 204  # No Content, success
+    else:
+        abort(500)
+
 
 @app.route("/xinfo/patchai", methods=['GET', 'POST'])
 def patchai():

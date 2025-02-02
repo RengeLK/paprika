@@ -30,6 +30,8 @@ users = {  # used by xInfo auth
         ## Bakalari ##
         "bakauser": "paveln9c",
         "bakapass": "jsemretard69",
-        "bakatoken": None  # DO NOT CHANGE
+        "bakatoken": None,  # DO NOT CHANGE
+        "bakarefresh": None,  # DO NOT CHANGE
+        "bakatimeout": 0  # DO NOT CHANGE
     }
 }
