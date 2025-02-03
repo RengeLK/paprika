@@ -130,7 +130,7 @@ def news():
 # Serve the xDOS (public transport) section
 @app.route("/xdos")
 def xdos():
-    return render_xhtml("xdos.xhtml", title="xDOS")
+    return render_xhtml("xdos.xhtml", title="xDOS", combid=crws_combid)
 
 @app.route("/xdos/conn", methods=['POST'])
 def xdos_conn():

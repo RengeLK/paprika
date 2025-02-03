@@ -2,7 +2,7 @@
 
 {% block content %}
     <p class="title">xDOS</p>
-    <p>Easy lookup of public transport info. (COMBID is PID)</p><hr class="solid"/>
+    <p>Easy lookup of public transport info. (COMBID is {{ combid }})</p><hr class="solid"/>
     <b>Connection lookup</b>
     <form method="post" action="{{ url_for('xdos_conn') }}">
         <input type="text" name="from" placeholder="From:" required="required"/>
