@@ -7,24 +7,16 @@
         <b>{{ i.teacher }} - {{ i.class }}/{{ i.group }}</b>
         <p>{{ i.msg }}</p>
         <p>Od {{ i.start }} do {{ i.end }}</p>
-        <p>Hotovo? {{ i.finished }}</p>
-        {% if not finished %}<button onclick="finishHomework('{{ i.id }}')">Splnit</button>{% endif %}
+        {% if i.finished %}
+        <p style="color: green;">Dokonceno</p>
+        {% else %}
+        <p style="color: red;">Nedokonceno</p>
+        <form action="/xinfo/baka/homework/finish/{{ i.id }}" method="post" style="display: inline;">
+            <button type="submit">Splnit</button>
+        </form>
+        {% endif %}
         <hr class="dotted"/>
         {% endfor %}<hr class="solid"/>
     </div>
     <p>Data fetched from Bakalari at {{ time }}</p>
-
-    <script>
-        function finishHomework(hwId) {
-            fetch(`/xinfo/baka/homework/finish/${encodeURIComponent(hwId)}`, {
-                method: "PUT"
-            }).then(response => {
-                if (response.ok) {
-                    location.reload();
-                } else {
-                    alert("An error occured!");
-                }
-            });
-        }
-    </script>
 {% endblock %}

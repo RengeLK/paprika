@@ -12,6 +12,9 @@ from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_us
 from helpers import render_xhtml, format_delays, fetch_rss_feed, fetch_rss_meta, bakatoken_get
 gpt = OpenAI(api_key=openaikey)
 app = Flask(__name__)
+app.jinja_env.trim_blocks = True  # Removes leading newlines inside blocks
+app.jinja_env.lstrip_blocks = True  # Strips leading spaces and tabs from blocks
+app.jinja_env.keep_trailing_newline = False  # (Optional) Prevents an extra trailing newline in output
 app.secret_key = sessionkey
 tz_offset = timezone(timedelta(hours=1))
 
@@ -243,8 +246,8 @@ def baka_timetable():
         abort(404)
 
     yukari = bakatoken_get(session['username'])
-    r = requests.get(f"{bakaurl}/api/3/timetable/actual?date=2025-02-03", headers=yukari)
-    days_map = {1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday'}
+    r = requests.get(f"{bakaurl}/api/3/timetable/actual", headers=yukari)
+    days_map = {1: 'Pondělí', 2: 'Úterý', 3: 'Středa', 4: 'Čtvrtek', 5: 'Pátek'}
     hour_map = []
     parsed_data = {'days': {}, 'cycle': 'Unknown'}
     data = r.json()
@@ -259,7 +262,7 @@ def baka_timetable():
     # Create a lookup for types of content
     hours = {hour['Id']: hour['Caption'] for hour in data.get('Hours', [])}
     subjects = {sub['Id']: sub['Abbrev'] for sub in data.get('Subjects', [])}
-    teachers = {t['Id']: t['Name'] for t in data.get('Teachers', [])}
+    teachers = {t['Id']: t['Abbrev'] for t in data.get('Teachers', [])}
     rooms = {r['Id']: r['Abbrev'] for r in data.get('Rooms', [])}
     classes = {c['Id']: c['Abbrev'] for c in data.get('Groups', [])}
     
@@ -277,28 +280,31 @@ def baka_timetable():
             if atom['Change']:  # it is time to celebrate
                 parsed_data['days'][day_of_week - 1]['atoms'].append({
                     'change': True,
-                    'type': atom['Change']['ChangeType'],
-                    'desc': atom['Change']['Description']
+                    'type': atom['Change'].get('ChangeType', 'NaN'),
+                    'desc': atom['Change'].get('Description', 'NaN'),
+                    'id': hours.get(atom.get('HourId'), '0'),
+                    'name': subjects.get(atom.get('SubjectId'), 'NaN'),
+                    'room': rooms.get(atom.get('RoomId'), 'NaN'),
+                    'teacher': teachers.get(atom.get('TeacherId'), 'NaN'),
+                    'class': classes.get(atom['GroupIds'][0], 'NaN') if atom.get('GroupIds') else 'NaN'
                 })
-                continue
-            
-            hour_id = atom['HourId']
-            subject_id = atom['SubjectId']
-            teacher_id = atom['TeacherId']
-            room_id = atom['RoomId']
-            class_id = atom['GroupIds'][0] if atom['GroupIds'] else None
-            
-            parsed_data['days'][day_of_week - 1]['atoms'].append({
-                'change': False,
-                'id': hours.get(hour_id, 'Unknown'),
-                'name': subjects.get(subject_id, 'Unknown'),
-                'room': rooms.get(room_id, 'Unknown'),
-                'teacher': teachers.get(teacher_id, 'Unknown'),
-                'class': classes.get(class_id, 'Unknown')
-            })
-    parsed_data['cycle'] = data['Cycles'][0]['Abbrev']
+            else:
+                hour_id = atom.get('HourId')
+                subject_id = atom.get('SubjectId')
+                teacher_id = atom.get('TeacherId')
+                room_id = atom.get('RoomId')
+                class_id = atom['GroupIds'][0] if atom.get('GroupIds') else None
 
-    print(hour_map)
+                parsed_data['days'][day_of_week - 1]['atoms'].append({
+                    'change': False,
+                    'id': hours.get(hour_id, '0'),
+                    'name': subjects.get(subject_id, 'NaN'),
+                    'room': rooms.get(room_id, 'NaN'),
+                    'teacher': teachers.get(teacher_id, 'NaN'),
+                    'class': classes.get(class_id, 'NaN')
+                })
+
+    parsed_data['cycle'] = data['Cycles'][0]['Abbrev'] + ' (' + data['Cycles'][0]['Name'] + ')'
     ctime = datetime.now().strftime('%H:%M:%S')
     return render_xhtml("baka_timetable.xhtml", title="Baka :: Rozvrh", data=parsed_data, map=hour_map, time=ctime)
 
@@ -326,8 +332,8 @@ def baka_homework():
     for i in dat['Homeworks']:
         hwinfo.append({
             'id': i['ID'],
-            'start': datetime.strptime(i['DateStart'], "%Y-%m-%dT%H:%M:%S%z").strftime("%d.%m.%Y %H:%M"),
-            'end': datetime.strptime(i['DateEnd'], "%Y-%m-%dT%H:%M:%S%z").strftime("%d.%m.%Y %H:%M"),
+            'start': datetime.strptime(i['DateStart'], "%Y-%m-%dT%H:%M:%S%z").strftime("%d.%m.%Y"),
+            'end': datetime.strptime(i['DateEnd'], "%Y-%m-%dT%H:%M:%S%z").strftime("%d.%m.%Y"),
             'msg': i['Content'],
             'done': i['Done'],
             'closed': i['Closed'],
@@ -340,7 +346,7 @@ def baka_homework():
     ctime = datetime.now().strftime('%H:%M:%S')
     return render_xhtml("baka_homework.xhtml", title="Baka :: Ukoly", hw=hwinfo, time=ctime)
 
-@app.route("/xinfo/baka/homework/finish/<hw_id>", methods=["PUT"])
+@app.route("/xinfo/baka/homework/finish/<hw_id>", methods=["POST"])
 def finish_homework(hw_id):
     # User is not logged in, serve fake 404
     if 'username' not in session:
@@ -350,7 +356,7 @@ def finish_homework(hw_id):
     r = requests.put(f"{bakaurl}/api/3/homeworks/{hw_id}/student-done/true", headers=yukari)
 
     if r.status_code == 200:
-        return "", 204  # No Content, success
+        return "", 204  # TODO: this doesn't redirect properly, change to smth like 303
     else:
         abort(500)
 

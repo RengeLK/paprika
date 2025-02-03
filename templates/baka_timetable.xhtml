@@ -3,42 +3,24 @@
 {% block content %}
     <p class="title">Rozvrh hodin</p><hr class="solid"/>
 
-    <table border="1">
-        <caption>Nesnasim negry stejne jako mono</caption>
-        <thead>
-            <tr>
-                <th>Day</th>
-                {% for i in map %}
-                <th>
-                    <span class="id">{{ i.id }}</span> - 
-                    <span class="time-range">
-                    <small>{{ i.start }}</small> / <small>{{ i.end }}</small>
-                    </span>
-                </th>                  
-                {% endfor %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for i, day in data['days'].items() %}
-                <tr>
-                    <td><strong>{{ day.name }}</strong></td>
-                    {% for hour in range(1, 11) %}
-                        {% set atom_for_hour = day['atoms'] | selectattr('hour', 'equalto', hour) | first %}
-                        {% if atom_for_hour %}
-                            <td>
-                                <strong>{{ atom_for_hour.name }}</strong><br/>
-                                Room: {{ atom_for_hour.room }}<br/>
-                                Teacher: {{ atom_for_hour.teacher }}<br/>
-                                Class: {{ atom_for_hour.class }}
-                            </td>
+    <div class="timetable">
+        <i>Current cycle: {{ data['cycle'] }}</i>
+        {% for day in data.days.values() %}
+            <div class="day">
+                <h3>{{ day.name }}</h3>
+                {% for atom in day.atoms %}
+                    <div class="lesson">
+                        {% set hour = map | selectattr("id", "equalto", atom.id) | first %}
+                        {% if atom.change %}
+                        <p style="color: red;"><strong>{{ atom.id }} ({{ hour.start }} - {{ hour.end }})</strong>: {{ atom.name }} ({{ atom.room }}) - {{ atom.teacher }}/{{ atom.class }} \|/ {{ atom.desc }}</p>
                         {% else %}
-                            <td>unused</td> <!-- Empty cell for unused hour -->
+                        <p><strong>{{ atom.id }} ({{ hour.start }} - {{ hour.end }})</strong>: {{ atom.name }} ({{ atom.room }}) - {{ atom.teacher }}/{{ atom.class }}</p>
                         {% endif %}
-                    {% endfor %}
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
 
     <p>Data fetched from Bakalari at {{ time }}</p>
 {% endblock %}
