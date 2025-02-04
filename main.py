@@ -1,7 +1,7 @@
 ################################
 ## cool paprika program       ##
 ## main.py - main code        ##
-## -renge 2024                ##
+## -renge 2024-2025           ##
 ################################
 from flask import Flask, send_from_directory, abort, redirect, url_for, request, session, redirect
 from datetime import datetime, timezone, timedelta

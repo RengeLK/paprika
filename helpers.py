@@ -1,7 +1,7 @@
 ################################
 ## cool paprika program       ##
 ## helpers.py - helper funcs  ##
-## -renge 2024                ##
+## -renge 2024-2025           ##
 ################################
 from flask import render_template, make_response
 import feedparser
