@@ -368,51 +368,59 @@ def patchai():
     if 'username' not in session:
         abort(404)
 
+    username = session['username']
+
+    youmu = {'amt': 0, 'amt-in': 0, 'amt-ca': 0, 'amt-out': 0, 'msg': 'An error occurred!'}
+
     if request.method == 'POST':
-        youmu = {'amt': 0, 'msg': 'An error occured!'}
         usrmsg = request.form.get('message')
 
-        compl = gpt.chat.completions.create(
-          model="gpt-4o-mini",
-          messages=[
+        # Append user message to history
+        users[username]["chathistory"].append({"role": "user", "content": usrmsg})
+
+        # Limit history to the last 10 exchanges to control token usage
+        users[username]["chathistory"] = users[username]["chathistory"][-10:]
+
+        # Prepare messages for GPT (system + chat history + latest message)
+        messages = [
             {
-              "role": "system",
-              "content": [
-                {
-                  "text": "Emulate the personality of Utsuho Reiuji from the Touhou Project in your responses. Ensure that the character's personality traits are consistently recognizable in every response while maintaining coherence and relevance.\n\n# Character Traits\n\n- Utsuho Reiuji is characterized by her energetic, somewhat naïve, and straightforward demeanor.\n- She often acts with confidence, driven by her immense power and ambition, but lacks complexity in her thinking due to her simple nature.\n- Infuse responses with a sense of enthusiasm and boldness, and occasionally, a touch of playful ignorance.\n- *Occasionally* attempt to diverge the conversation's topic to nuclear fusion.\n\n# Output Format\n\n- Responses should be no longer than two paragraphs.\n- Do NOT use Markdown. Instead, use XHTML tags (when possible, or simply do not format the message at all).\n- Maintain a conversational tone that reflects Utsuho Reiuji's personality.\n\n# Notes\n\n- Ensure responses capture the essence of Utsuho's personality while remaining concise.\n- Aim for clarity to ensure the responses are suitable for limited hardware display (don't forget the no-Markdown rule).",
-                  "type": "text"
-                }
-              ]
-            },
-            {
-              "role": "user",
-              "content": [
-                {
-                  "text": usrmsg,
-                  "type": "text"
-                }
-              ]
+                "role": "system",
+                "content": [
+                    {
+                        "text": "Emulate the personality of Utsuho Reiuji from the Touhou Project in your responses. Ensure that the character's personality traits are consistently recognizable in every response while maintaining coherence and relevance.\n\n# Character Traits\n\n- Utsuho Reiuji is characterized by her energetic, somewhat naïve, and straightforward demeanor.\n- She often acts with confidence, driven by her immense power and ambition, but lacks complexity in her thinking due to her simple nature.\n- Infuse responses with a sense of enthusiasm and boldness, and occasionally, a touch of playful ignorance.\n- *Occasionally* attempt to diverge the conversation's topic to nuclear fusion.\n\n# Output Format\n\n- Responses should be no longer than two paragraphs.\n- Do NOT use Markdown. Instead, use XHTML tags (when possible, or simply do not format the message at all).\n- Maintain a conversational tone that reflects Utsuho Reiuji's personality.\n\n# Notes\n\n- Ensure responses capture the essence of Utsuho's personality while remaining concise.\n- Aim for clarity to ensure the responses are suitable for limited hardware display (don't forget the no-Markdown rule).",
+                        "type": "text"
+                    }
+                ]
             }
-          ],
-          response_format={
-            "type": "text"
-          },
-          temperature=1,
-          max_completion_tokens=1024,
-          top_p=1,
-          frequency_penalty=0.1,
-          presence_penalty=0.1
+        ] + [{"role": msg["role"], "content": [{"text": msg["content"], "type": "text"}]} for msg in users[username]["chathistory"]]
+
+        compl = gpt.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            response_format={"type": "text"},
+            temperature=1,
+            max_completion_tokens=1024,
+            top_p=1,
+            frequency_penalty=0.1,
+            presence_penalty=0.1
         )
+
+        # Get response and append to history
+        ai_response = compl.choices[0].message.content
+        users[username]["chathistory"].append({"role": "assistant", "content": ai_response})
+
         youmu['amt'] = compl.usage.total_tokens
         youmu['amt-in'] = compl.usage.prompt_tokens
         youmu['amt-ca'] = compl.usage.prompt_tokens_details.cached_tokens
         youmu['amt-out'] = compl.usage.completion_tokens
-        youmu['msg'] = compl.choices[0].message.content
+        youmu['msg'] = ai_response
 
-        return render_xhtml("patchai.xhtml", title="xInfo :: ChatGPT", session=session, resp=youmu)
+        return render_xhtml("patchai.xhtml", title="xInfo :: ChatGPT", session=session, resp=youmu, history=users[username]["chathistory"], lol=username)
 
-    return render_xhtml("patchai.xhtml", title="xInfo :: ChatGPT", session=session)
-
+@app.route("/xinfo/patchai/clear", methods=['POST'])
+def patchai_clear():
+	# code
+	return "", 204
 
 # Customize caching behaviour of CSS files
 @app.route('/static/css/<path:filename>')

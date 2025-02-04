@@ -6,11 +6,19 @@
 
     {% if resp %}
     <b>Response ate {{ resp['amt-in'] }} input tokens ({{ resp['amt-out'] }} cached), {{ resp['amt-out'] }} output tokens; {{ resp['amt'] }} total.</b><br/>
-    <p>{{ resp['msg'] }}</p>
+    <p>{{ resp['msg'] }}</p><br/>
+    {% for i in history %}
+    {% set role = lol if i.role == "user" else "Okuu" %}
+    <small>{{ role }} -- {{ i.content }}</small><br/>
+    {% endfor %}
     {% endif %}
 
     <form method="post" action="{{ url_for('patchai') }}">
         <textarea name="message" placeholder="Patchy, it's Marisa, I love you.." required="required"/>
         <button type="submit">Send</button>
+    </form>
+    <form method="post" action="{{ url_for('patchai_clear') }}">
+    	<button type="submit">Clear chat</button>
+    	<small style="color: red;">You cannot undo this!</small>
     </form>
 {% endblock %}

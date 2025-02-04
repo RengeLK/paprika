@@ -27,6 +27,7 @@ users = {  # used by xInfo auth
         "username": "admin9",  # This NEEDS to be identical to the previous line
         "password": "cirnoIZdaBEST",
         "gptallow": False,  # Allow access to /xinfo/patchai
+        "chathistory": [],  # OpenAI chat history (1 compl per user)
         ## Bakalari ##
         "bakauser": "paveln9c",
         "bakapass": "jsemretard69",
