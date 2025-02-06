@@ -357,7 +357,7 @@ def finish_homework(hw_id):
     r = requests.put(f"{bakaurl}/api/3/homeworks/{hw_id}/student-done/true", headers=yukari)
 
     if r.status_code == 200:
-        return "", 204  # TODO: this doesn't redirect properly, change to smth like 303
+        return redirect(url_for('baka_homework')), 303
     else:
         abort(500)
 
@@ -378,9 +378,6 @@ def patchai():
         # Append user message to history
         users[username]["chathistory"].append({"role": "user", "content": usrmsg})
 
-        # Limit history to the last 10 exchanges to control token usage
-        users[username]["chathistory"] = users[username]["chathistory"][-10:]
-
         # Prepare messages for GPT (system + chat history + latest message)
         messages = [
             {
@@ -394,6 +391,7 @@ def patchai():
             }
         ] + [{"role": msg["role"], "content": [{"text": msg["content"], "type": "text"}]} for msg in users[username]["chathistory"]]
 
+        print(f"Starting to process prompt of user {username}")
         compl = gpt.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
@@ -404,23 +402,32 @@ def patchai():
             frequency_penalty=0.1,
             presence_penalty=0.1
         )
+        print(f"Prompt processed, response received for user {username}")
 
         # Get response and append to history
         ai_response = compl.choices[0].message.content
         users[username]["chathistory"].append({"role": "assistant", "content": ai_response})
 
+        # Limit history to the last 10 exchanges to control token usage
+        users[username]["chathistory"] = users[username]["chathistory"][-10:]
+
         youmu['amt'] = compl.usage.total_tokens
         youmu['amt-in'] = compl.usage.prompt_tokens
         youmu['amt-ca'] = compl.usage.prompt_tokens_details.cached_tokens
         youmu['amt-out'] = compl.usage.completion_tokens
-        youmu['msg'] = ai_response
 
-        return render_xhtml("patchai.xhtml", title="xInfo :: ChatGPT", session=session, resp=youmu, history=users[username]["chathistory"], lol=username)
+        return render_xhtml("patchai.xhtml", title="xInfo :: ChatGPT", resp=youmu, history=users[username]["chathistory"], lol=username)
+
+    return render_xhtml("patchai.xhtml", title="xInfo :: ChatGPT", history=users[username]["chathistory"], lol=username)
 
 @app.route("/xinfo/patchai/clear", methods=['POST'])
 def patchai_clear():
-	# code
-	return "", 204
+	# User is not logged in, serve fake 404
+    if 'username' not in session:
+        abort(404)
+
+    users[session['username']]["chathistory"] = []
+    return redirect(url_for('patchai')), 303
 
 # Customize caching behaviour of CSS files
 @app.route('/static/css/<path:filename>')

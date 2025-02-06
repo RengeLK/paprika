@@ -2,19 +2,23 @@
 
 {% block content %}
     <p class="title">Cool ChatGPTee</p>
-    <p>blablabla</p><br/>
+    <p>Welcome to the coolest chat app!</p><br/>
 
     {% if resp %}
-    <b>Response ate {{ resp['amt-in'] }} input tokens ({{ resp['amt-out'] }} cached), {{ resp['amt-out'] }} output tokens; {{ resp['amt'] }} total.</b><br/>
-    <p>{{ resp['msg'] }}</p><br/>
+    <b>Response ate {{ resp['amt-in'] }} input tokens ({{ resp['amt-ca'] }} cached), {{ resp['amt-out'] }} output tokens; {{ resp['amt'] }} total.</b><br/>
+    {% endif %}
     {% for i in history %}
     {% set role = lol if i.role == "user" else "Okuu" %}
-    <small>{{ role }} -- {{ i.content }}</small><br/>
-    {% endfor %}
+    {% set color = "green" if role == lol else "blue" %}
+    {% if loop.last %}
+    <p style="color: {{ color }};">{{ role }} -- {{ i.content }}</p>
+    {% else %}
+    <small style="color: {{color}};">{{ role }} -- {{ i.content }}</small><br/>
     {% endif %}
+    {% endfor %}
 
     <form method="post" action="{{ url_for('patchai') }}">
-        <textarea name="message" placeholder="Patchy, it's Marisa, I love you.." required="required"/>
+        <textarea name="message" placeholder="Patchy, it's Marisa, I love you.." required="required" rows="3"/>
         <button type="submit">Send</button>
     </form>
     <form method="post" action="{{ url_for('patchai_clear') }}">
