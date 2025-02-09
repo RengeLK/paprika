@@ -3,7 +3,7 @@
 {% block content %}
     <p class="title">Weather</p>
     <p>The latest weather info, at your fingertips.</p><br/>
-    <p>Current || <a href="{{ url_for('forecast') }}">Forecast</a></p>
+    <p>Current || <a href="{{ url_for('forecast') }}">Forecast</a> || <a href="{{ url_for('astro') }}">Astro</a></p>
     <div>
         <b>Current weather in {{ location }}</b><br/>
         <i>{{ weather['reqdate'] }}</i>

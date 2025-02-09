@@ -1,0 +1,11 @@
+{% extends "base.xhtml" %}
+
+{% block content %}
+    <p class="title">Weather</p>
+    <p>The latest weather info, at your fingertips.</p><br/>
+    <p><a href="{{ url_for('weather') }}">Current</a> || <a href="{{ url_for('forecast') }}">Forecast</a> || Astro</p>
+    <div>
+        <b>月 details</b><br/>
+        <i>wip</i>
+    </div>
+{% endblock %}

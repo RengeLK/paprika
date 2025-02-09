@@ -6,9 +6,10 @@
 from flask import Flask, send_from_directory, abort, redirect, url_for, request, session, redirect
 from datetime import datetime, timezone, timedelta
 import requests
+import base64
 from urllib.parse import quote_plus
 from openai import OpenAI
-from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_userid, crws_userdesc, crws_combid, bakaurl, openaikey, wlat, wlon, wloc, calendar
+from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_userid, crws_userdesc, crws_combid, bakaurl, openaikey, wlat, wlon, wele, wloc, calendar, astroid, astrokey
 from helpers import render_xhtml, format_delays, fetch_rss_feed, fetch_rss_meta, bakatoken_get
 gpt = OpenAI(api_key=openaikey)
 app = Flask(__name__)
@@ -120,6 +121,29 @@ def forecast():
         })
 
     return render_xhtml("forecast.xhtml", title="Forecast", weather=weather_info, location=loc, time=ctime)
+
+@app.route("/weather/astro")
+def astro():
+    authString = base64.b64encode(f"{astroid}:{astrokey}".encode()).decode()
+    yukari = {'Authorization': 'Basic ' + authString}
+    today = datetime.now().strftime('%Y-%m-%d')
+    time = datetime.now().strftime('%H:%M:%S')
+    nitori = {}
+    r = requests.get(f"https://api.astronomyapi.com/api/v2/bodies/positions/moon?latitude={wlat}&longitude={wlon}&elevation={wele}&from_date={today}&to_date={today}&time={time}", headers=yukari)
+    dat = r.json()['data']['table']['rows'][0]['cells'][0]
+
+    nitori['distance'] = dat['distance']['fromEarth']['km']
+    nitori['altitude'] = dat['position']['horizontal']['altitude']['string']
+    nitori['azimuth'] = dat['position']['horizontal']['azimuth']['string']
+    nitori['ascension'] = dat['position']['equatorial']['rightAscension']['string']
+    nitori['declination'] = dat['position']['equatorial']['declination']['string']
+    nitori['constellation'] = dat['position']['constellation']['name']
+    nitori['magnitude'] = str(dat['extraInfo']['magnitude'])
+    nitori['phase'] = dat['extraInfo']['phase']['string']
+    nitori['angel'] = dat['extraInfo']['phase']['angel']
+    nitori['fraction']  = dat['extraInfo']['phase']['fraction']
+
+    return render_xhtml("astro.xhtml", title="Astronomy", data=nitori, time=time)
 
 # Serve the news section
 #TODO: page system
@@ -233,7 +257,6 @@ def logout():
     return redirect(url_for('xinfo_login'))
 
 # Serve the xInfo homepage
-# TODO: bakalari a server status
 @app.route("/xinfo/home", methods=['GET'])
 def xinfo_home():
     # User is not logged in, serve login form
@@ -388,12 +411,15 @@ def finish_homework(hw_id):
     else:
         abort(500)
 
-
+# ChatGPT code
 @app.route("/xinfo/patchai", methods=['GET', 'POST'])
 def patchai():
     # User is not logged in, serve fake 404
     if 'username' not in session:
         abort(404)
+    # User isn't GPT-allowed, serve 401
+    if not users[session['username']]['gptallow']:
+        abort(401)
 
     username = session['username']
 
@@ -443,7 +469,7 @@ def patchai():
         youmu['amt-ca'] = compl.usage.prompt_tokens_details.cached_tokens
         youmu['amt-out'] = compl.usage.completion_tokens
 
-        return render_xhtml("patchai.xhtml", title="xInfo :: ChatGPT", resp=youmu, history=users[username]["chathistory"], lol=username)
+        return render_xhtml("patchai.xhtml", title="xInfo :: ChatGPT", history=users[username]["chathistory"], lol=username, resp=youmu)
 
     return render_xhtml("patchai.xhtml", title="xInfo :: ChatGPT", history=users[username]["chathistory"], lol=username)
 
@@ -452,9 +478,25 @@ def patchai_clear():
 	# User is not logged in, serve fake 404
     if 'username' not in session:
         abort(404)
+    # User isn't GPT-allowed, serve 401
+    if not users[session['username']]['gptallow']:
+        abort(401)
 
     users[session['username']]["chathistory"] = []
     return redirect(url_for('patchai')), 303
+
+# gambling code
+@app.route("/xinfo/gambling")
+def gambling():
+    # User is not logged in, serve fake 404
+    if 'username' not in session:
+        abort(404)
+    # User isn't allowed to gamble, serve 401
+    if not users[session['username']]['gamallow']:
+        abort(401)
+
+    return render_xhtml("gambling.xhtml", title="xInfo :: Gambooru", username=session['username'])
+
 
 # Customize caching behaviour of CSS files
 @app.route('/static/css/<path:filename>')

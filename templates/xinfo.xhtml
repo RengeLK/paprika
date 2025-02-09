@@ -10,5 +10,6 @@
     <a href="{{ url_for('baka_homework') }}">Ukoly</a><br/>
 
     {% if session['gptallow'] %}<a href="{{ url_for('patchai') }}">ChatGPT</a>{% endif %}
+    {% if session['gamallow'] %}<a href="{{ url_for('gambling') }}">Gambooru</a>{% endif %}
     <a href="{{ url_for('logout') }}">Logout</a>
 {% endblock %}
