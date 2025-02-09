@@ -5,6 +5,14 @@
     <p>Your lightweight portal to all kinds of stuff,
     all on your mobile device in the right format.
     </p><hr class="solid"/>
+    <b>Today is [{{ date }}]</b>
+    {% if event %}
+    <p>Today is {{ event.name }}!</p>
+    <i>{{ event.desc }}</i>
+    {% else %}
+    <p>No event today... Value everyday regardless!</p>
+    {% endif %}
+    <hr class="solid"/><br/>
     <div class="test">
         <p>Welcome to the capabilities testpage!</p><hr class="dotted"/>
         <strong>Strong text</strong>

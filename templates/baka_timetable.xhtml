@@ -12,7 +12,7 @@
                     <div class="lesson">
                         {% set hour = map | selectattr("id", "equalto", atom.id) | first %}
                         {% if atom.change %}
-                        <p style="color: red;"><strong>{{ atom.id }} ({{ hour.start }} - {{ hour.end }})</strong>: {{ atom.name }} ({{ atom.room }}) - {{ atom.teacher }}/{{ atom.class }} \|/ {{ atom.desc }}</p>
+                        <p style="color: {{ atom.color }};"><strong>{{ atom.id }} ({{ hour.start }} - {{ hour.end }})</strong>: {{ atom.name }} ({{ atom.room }}) - {{ atom.teacher }}/{{ atom.class }} \|/ {{ atom.desc }}</p>
                         {% else %}
                         <p><strong>{{ atom.id }} ({{ hour.start }} - {{ hour.end }})</strong>: {{ atom.name }} ({{ atom.room }}) - {{ atom.teacher }}/{{ atom.class }}</p>
                         {% endif %}

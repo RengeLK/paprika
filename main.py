@@ -8,7 +8,7 @@ from datetime import datetime, timezone, timedelta
 import requests
 from urllib.parse import quote_plus
 from openai import OpenAI
-from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_userid, crws_userdesc, crws_combid, bakaurl, openaikey, wlat, wlon, wloc
+from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_userid, crws_userdesc, crws_combid, bakaurl, openaikey, wlat, wlon, wloc, calendar
 from helpers import render_xhtml, format_delays, fetch_rss_feed, fetch_rss_meta, bakatoken_get
 gpt = OpenAI(api_key=openaikey)
 app = Flask(__name__)
@@ -33,7 +33,13 @@ def err500(error):
 # Serve the home page
 @app.route("/")
 def home():
-    return render_xhtml("home.xhtml", title="Home")
+    today = datetime.now().strftime('%d-%m')
+    used = datetime.now().strftime('%d.%m.%Y')
+    if today in calendar:
+        event = calendar[today]
+    else:
+        event = None
+    return render_xhtml("home.xhtml", title="Home", date=used, event=event)
 
 # Serve the downloads section
 @app.route("/downloads")
@@ -278,10 +284,19 @@ def baka_timetable():
         
         for atom in day['Atoms']:
             if atom['Change']:  # it is time to celebrate
+                chtype = atom['Change']['ChangeType']
+                if chtype == 'Canceled':
+                    color = 'green'
+                elif chtype == 'Substitution':
+                    color = 'red'
+                else:
+                    color = 'yellow'
+
                 parsed_data['days'][day_of_week - 1]['atoms'].append({
                     'change': True,
                     'type': atom['Change'].get('ChangeType', 'NaN'),
                     'desc': atom['Change'].get('Description', 'NaN'),
+                    'color': color,
                     'id': hours.get(atom.get('HourId'), '0'),
                     'name': subjects.get(atom.get('SubjectId'), 'NaN'),
                     'room': rooms.get(atom.get('RoomId'), 'NaN'),
@@ -331,10 +346,22 @@ def baka_homework():
     hwinfo = []
 
     for i in dat['Homeworks']:
+        end = datetime.strptime(i['DateEnd'], "%Y-%m-%dT%H:%M:%S%z")
+        today = datetime.now(end.tzinfo)
+        delta = (end - today).days
+        if delta == 0:
+            relative_date = "dnes"
+        elif delta == 1:
+            relative_date = "zítra"
+        elif delta > 1:
+            relative_date = f"za {delta} dní"
+        else:
+            relative_date = f"před {-delta} dny"
+
         hwinfo.append({
             'id': i['ID'],
-            'start': datetime.strptime(i['DateStart'], "%Y-%m-%dT%H:%M:%S%z").strftime("%d.%m.%Y"),
-            'end': datetime.strptime(i['DateEnd'], "%Y-%m-%dT%H:%M:%S%z").strftime("%d.%m.%Y"),
+            'start': datetime.strptime(i['DateStart'], "%Y-%m-%dT%H:%M:%S%z").strftime("%d.%m"),
+            'end': datetime.strptime(i['DateEnd'], "%Y-%m-%dT%H:%M:%S%z").strftime("%d.%m.%Y") + f" ({relative_date})",
             'msg': i['Content'],
             'done': i['Done'],
             'closed': i['Closed'],
@@ -437,4 +464,4 @@ def custom_static(filename):
     return response
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=4040, debug=True)  # DEBUG IS ON!
+    app.run(host='0.0.0.0', port=4048, debug=True)  # DEBUG IS ON!

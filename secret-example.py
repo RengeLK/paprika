@@ -36,3 +36,10 @@ users = {  # used by xInfo auth
         "bakatimeout": 0  # DO NOT CHANGE
     }
 }
+
+calendar = {  # used on the home page to display EoTD
+    "09-09": {  # dd-mm
+        'name': 'Cirno Day',
+        'desc': 'The strongest day of the year!'
+    }
+}
