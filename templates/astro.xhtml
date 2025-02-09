@@ -3,9 +3,14 @@
 {% block content %}
     <p class="title">Weather</p>
     <p>The latest weather info, at your fingertips.</p><br/>
-    <p><a href="{{ url_for('weather') }}">Current</a> || <a href="{{ url_for('forecast') }}">Forecast</a> || Astro</p>
+    <p><a href="{{ url_for('weather') }}">Current</a> || <a href="{{ url_for('forecast') }}">Forecast</a> || Astro</p><hr class="solid"/>
     <div>
-        <b>月 details</b><br/>
-        <i>wip</i>
+        <b>月 details</b>
+        <i>{{ data['phase'] }}</i>
+        <small>{{ data['angel'] }} / {{ data['fraction'] }}</small><br/>
+        <p>Altitude: {{ data['altitude'] }}</p>
+        <p>Azimuth: {{ data['azimuth'] }}</p>
+        <p>Distance: {{ data['distance'] }}</p>
+        <p>Right ascension: {{ data['ascension'] }} / Declination: {{ data['declination'] }}</p>
     </div>
 {% endblock %}
