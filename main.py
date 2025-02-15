@@ -5,11 +5,14 @@
 ################################
 from flask import Flask, send_from_directory, abort, redirect, url_for, request, session, redirect
 from datetime import datetime, timezone, timedelta
+from skyfield.api import load, Topos
+from skyfield.almanac import fraction_illuminated, moon_phase, MOON_PHASES, moon_phases
+from numpy import pi
 import requests
 import base64
 from urllib.parse import quote_plus
 from openai import OpenAI
-from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_userid, crws_userdesc, crws_combid, bakaurl, openaikey, wlat, wlon, wele, wloc, calendar, astroid, astrokey
+from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_userid, crws_userdesc, crws_combid, bakaurl, openaikey, openaiprompt, openainame, wlat, wlon, wele, wloc, woffset, calendar, astroid, astrokey
 from helpers import render_xhtml, format_delays, fetch_rss_feed, fetch_rss_meta, bakatoken_get
 gpt = OpenAI(api_key=openaikey)
 app = Flask(__name__)
@@ -17,7 +20,11 @@ app.jinja_env.trim_blocks = True  # Removes leading newlines inside blocks
 app.jinja_env.lstrip_blocks = True  # Strips leading spaces and tabs from blocks
 app.jinja_env.keep_trailing_newline = False  # (Optional) Prevents an extra trailing newline in output
 app.secret_key = sessionkey
-tz_offset = timezone(timedelta(hours=1))
+tz_offset = timezone(timedelta(hours=woffset))
+ts = load.timescale()
+eph = load('de421.bsp')
+earth, moon, sun = eph['earth'], eph['moon'], eph['sun']
+observer = earth + Topos(latitude_degrees=wlat, longitude_degrees=wlon)
 
 @app.errorhandler(401)
 def err401(error):
@@ -49,15 +56,15 @@ def downloads():
 
 @app.route("/dls/java")
 def dljars():
-    return render_xhtml("dljars.xhtml", title="Java ME DLs", list=jarlist)
+    return render_xhtml("dlist.xhtml", title="Java ME DLs", atitle="MIDP 2.0 MIDlets", list=jarlist, type="java")
 
 @app.route("/dls/img")
 def dlimg():
-    return render_xhtml("dlimg.xhtml", title="Wallpaper DLs", list=imglist)
+    return render_xhtml("dlist.xhtml", title="Wallpaper DLs", atitle="Wallpapers", list=imglist, type="img")
 
 @app.route("/dls/snd")
 def dlsnd():
-    return render_xhtml("dlsnd.xhtml", title="Sound DLs", list=sndlist)
+    return render_xhtml("dlist.xhtml", title="Sound DLs", atitle="Ringtones", list=sndlist, type="snd")
 
 # Serve the weather section
 @app.route("/weather")
@@ -124,26 +131,22 @@ def forecast():
 
 @app.route("/weather/astro")
 def astro():
-    authString = base64.b64encode(f"{astroid}:{astrokey}".encode()).decode()
-    yukari = {'Authorization': 'Basic ' + authString}
-    today = datetime.now().strftime('%Y-%m-%d')
-    time = datetime.now().strftime('%H:%M:%S')
     nitori = {}
-    r = requests.get(f"https://api.astronomyapi.com/api/v2/bodies/positions/moon?latitude={wlat}&longitude={wlon}&elevation={wele}&from_date={today}&to_date={today}&time={time}", headers=yukari)
-    dat = r.json()['data']['table']['rows'][0]['cells'][0]
+    t = ts.utc(datetime.now(tz_offset))
+    astro_moon = observer.at(t).observe(moon).apparent()
+    alt, az, d = astro_moon.altaz()  # Altitude, Azimuth, Distance
+    illumination = fraction_illuminated(eph, 'moon', t) * 100
 
-    nitori['distance'] = dat['distance']['fromEarth']['km']
-    nitori['altitude'] = dat['position']['horizontal']['altitude']['string']
-    nitori['azimuth'] = dat['position']['horizontal']['azimuth']['string']
-    nitori['ascension'] = dat['position']['equatorial']['rightAscension']['string']
-    nitori['declination'] = dat['position']['equatorial']['declination']['string']
-    nitori['constellation'] = dat['position']['constellation']['name']
-    nitori['magnitude'] = str(dat['extraInfo']['magnitude'])
-    nitori['phase'] = dat['extraInfo']['phase']['string']
-    nitori['angel'] = dat['extraInfo']['phase']['angel']
-    nitori['fraction']  = dat['extraInfo']['phase']['fraction']
+    nitori['distance'] = int(d.km)
+    nitori['altitude'] = round(alt.degrees, 2)
+    nitori['azimuth'] = round(az.degrees, 2)
+    nitori['ill'] = round(illumination, 2)
+    nitori['phase'] = MOON_PHASES[moon_phases(eph)(t)]
+    nitori['rise'] = "00:00"
+    nitori['set'] = "00:00"
 
-    return render_xhtml("astro.xhtml", title="Astronomy", data=nitori, time=time)
+    ctime = datetime.now().strftime('%H:%M:%S')
+    return render_xhtml("astro.xhtml", title="Astronomy", data=nitori, time=ctime)
 
 # Serve the news section
 #TODO: page system
@@ -434,10 +437,10 @@ def patchai():
         # Prepare messages for GPT (system + chat history + latest message)
         messages = [
             {
-                "role": "system",
+                "role": "developer",
                 "content": [
                     {
-                        "text": "Emulate the personality of Utsuho Reiuji from the Touhou Project in your responses. Ensure that the character's personality traits are consistently recognizable in every response while maintaining coherence and relevance.\n\n# Character Traits\n\n- Utsuho Reiuji is characterized by her energetic, somewhat naïve, and straightforward demeanor.\n- She often acts with confidence, driven by her immense power and ambition, but lacks complexity in her thinking due to her simple nature.\n- Infuse responses with a sense of enthusiasm and boldness, and occasionally, a touch of playful ignorance.\n- *Occasionally* attempt to diverge the conversation's topic to nuclear fusion.\n\n# Output Format\n\n- Responses should be no longer than two paragraphs.\n- Do NOT use Markdown. Instead, use XHTML tags (when possible, or simply do not format the message at all).\n- Maintain a conversational tone that reflects Utsuho Reiuji's personality.\n\n# Notes\n\n- Ensure responses capture the essence of Utsuho's personality while remaining concise.\n- Aim for clarity to ensure the responses are suitable for limited hardware display (don't forget the no-Markdown rule).",
+                        "text": openaiprompt,
                         "type": "text"
                     }
                 ]
@@ -469,9 +472,9 @@ def patchai():
         youmu['amt-ca'] = compl.usage.prompt_tokens_details.cached_tokens
         youmu['amt-out'] = compl.usage.completion_tokens
 
-        return render_xhtml("patchai.xhtml", title="xInfo :: ChatGPT", history=users[username]["chathistory"], lol=username, resp=youmu)
+        return render_xhtml("patchai.xhtml", title="xInfo :: ChatGPT", history=users[username]["chathistory"], lol=username, assname=openainame, resp=youmu)
 
-    return render_xhtml("patchai.xhtml", title="xInfo :: ChatGPT", history=users[username]["chathistory"], lol=username)
+    return render_xhtml("patchai.xhtml", title="xInfo :: ChatGPT", history=users[username]["chathistory"], lol=username, assname=openainame)
 
 @app.route("/xinfo/patchai/clear", methods=['POST'])
 def patchai_clear():
@@ -484,18 +487,6 @@ def patchai_clear():
 
     users[session['username']]["chathistory"] = []
     return redirect(url_for('patchai')), 303
-
-# gambling code
-@app.route("/xinfo/gambling")
-def gambling():
-    # User is not logged in, serve fake 404
-    if 'username' not in session:
-        abort(404)
-    # User isn't allowed to gamble, serve 401
-    if not users[session['username']]['gamallow']:
-        abort(401)
-
-    return render_xhtml("gambling.xhtml", title="xInfo :: Gambooru", username=session['username'])
 
 
 # Customize caching behaviour of CSS files

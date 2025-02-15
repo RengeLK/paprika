@@ -1,0 +1,11 @@
+{% extends "base.xhtml" %}
+
+{% block content %}
+    <p class="title">Downloads :: {{ atitle }}</p>
+    <p>Please choose from the list below:</p><br class="dotted"/>
+    <ul>
+        {% for item in list %}
+        <li><a href="/static/dls/{{ type }}/{{ item['uri'] }}">{{ item['name'] }}</a></li>
+        {% endfor %}
+    </ul>
+{% endblock %}

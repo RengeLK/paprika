@@ -1,14 +1,14 @@
 {% extends "base.xhtml" %}
 
 {% block content %}
-    <p class="title">Cool ChatGPTee</p>
+    <p class="title">GPTChat Lite</p>
     <p>Welcome to the coolest chat app!</p><br/>
 
     {% if resp %}
     <b>Response ate {{ resp['amt-in'] }} input tokens ({{ resp['amt-ca'] }} cached), {{ resp['amt-out'] }} output tokens; {{ resp['amt'] }} total.</b><br/>
     {% endif %}
     {% for i in history %}
-    {% set role = lol if i.role == "user" else "Okuu" %}
+    {% set role = lol if i.role == "user" else assname %}
     {% set color = "green" if role == lol else "blue" %}
     {% if loop.last %}
     <p style="color: {{ color }};">{{ role }} -- {{ i.content }}</p>

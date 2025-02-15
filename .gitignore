@@ -1,5 +1,6 @@
 secret.py
 static/dls/
+*.bsp
 
 # ---> Python
 # Byte-compiled / optimized / DLL files
