@@ -4,7 +4,7 @@ bakaurl = "https://bakalari.spse4.cz/"  # api url for bakalari (xInfo)
 owmkey = "8634fds683f43dfs468"  # OpenWeatherMap API key
 openaikey = "sk-proj-letsgogambling!"  # OpenAI API key
 openaiprompt = "You are a helpful assistant."  # OpenAI 'developer' prompt incl. in each request
-openainame = "Assistant"  # Name of assistant in patchai
+openainame = "Assistant"  # Name of assistant in patchai (display purposes only)
 
 crws_userid = "GHB4534FDG-GFHGB45GH5D4HG"  # needed for xDOS
 crws_userdesc = "cz.mafra.jizdnirady"
@@ -15,6 +15,8 @@ wlon = 0  # GPS longitude for weather
 wele = 0  # Elevation for weather in meters
 wloc = 'Null Island'  # Displayed name of weather location
 woffset = 0  # Timezone offset for weather, used sometimes
+capurl = "https://example.com/cap.xml"  # URL for CAP alerts
+capgeo = "69420"  # Geocode for CAP alerts
 
 jarlist = [  # manual list of all jars present in /dls/java
     {'name': 'Test game', 'uri': 'test.jar'}

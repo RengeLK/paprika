@@ -52,6 +52,12 @@ img {
   margin-bottom: 10px;
 }
 
+.cap {
+  border-style: double;
+  border-width: 2px 2px;
+  margin-bottom: 2px;
+}
+
 /********** News stuff *********/
 
 .summary {

@@ -6,14 +6,14 @@
 from flask import Flask, send_from_directory, abort, redirect, url_for, request, session, redirect
 from datetime import datetime, timezone, timedelta
 from skyfield.api import load, Topos
-from skyfield.almanac import fraction_illuminated, moon_phase, MOON_PHASES, moon_phases
+from skyfield.almanac import fraction_illuminated, moon_phase, MOON_PHASES, moon_phases, find_discrete, risings_and_settings
 from numpy import pi
 import requests
 import base64
 from urllib.parse import quote_plus
 from openai import OpenAI
-from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_userid, crws_userdesc, crws_combid, bakaurl, openaikey, openaiprompt, openainame, wlat, wlon, wele, wloc, woffset, calendar, astroid, astrokey
-from helpers import render_xhtml, format_delays, fetch_rss_feed, fetch_rss_meta, bakatoken_get
+from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_userid, crws_userdesc, crws_combid, bakaurl, openaikey, openaiprompt, openainame, wlat, wlon, wele, wloc, woffset, calendar, capurl, capgeo
+from helpers import render_xhtml, format_delays, fetch_rss_feed, fetch_rss_meta, bakatoken_get, parse_cap
 gpt = OpenAI(api_key=openaikey)
 app = Flask(__name__)
 app.jinja_env.trim_blocks = True  # Removes leading newlines inside blocks
@@ -25,6 +25,7 @@ ts = load.timescale()
 eph = load('de421.bsp')
 earth, moon, sun = eph['earth'], eph['moon'], eph['sun']
 observer = earth + Topos(latitude_degrees=wlat, longitude_degrees=wlon)
+location = Topos(latitude_degrees=wlat, longitude_degrees=wlon)
 
 @app.errorhandler(401)
 def err401(error):
@@ -96,7 +97,8 @@ def weather():
         'sunset': datetime.fromtimestamp(dat['sys']['sunset']).strftime('%H:%M')
     }
 
-    return render_xhtml("weather.xhtml", title="Weather", weather=weather_info, location=loc)
+    capdat = parse_cap(capurl, capgeo)
+    return render_xhtml("weather.xhtml", title="Weather", weather=weather_info, location=loc, cap=capdat)
 
 @app.route("/weather/forecast")
 def forecast():
@@ -132,7 +134,10 @@ def forecast():
 @app.route("/weather/astro")
 def astro():
     nitori = {}
-    t = ts.utc(datetime.now(tz_offset))
+    now = datetime.now(tz_offset)
+    t = ts.utc(now)
+    
+    # Compute current moon properties
     astro_moon = observer.at(t).observe(moon).apparent()
     alt, az, d = astro_moon.altaz()  # Altitude, Azimuth, Distance
     illumination = fraction_illuminated(eph, 'moon', t) * 100
@@ -142,8 +147,24 @@ def astro():
     nitori['azimuth'] = round(az.degrees, 2)
     nitori['ill'] = round(illumination, 2)
     nitori['phase'] = MOON_PHASES[moon_phases(eph)(t)]
-    nitori['rise'] = "00:00"
-    nitori['set'] = "00:00"
+    
+    # Define the time range for the current day
+    t0 = ts.utc(now.year, now.month, now.day, 0, 0, 0)
+    t1 = ts.utc(now.year, now.month, now.day, 23, 59, 59)
+    
+    # Use Skyfield's almanac to compute moonrise and moonset events
+    f = risings_and_settings(eph, moon, location)
+    times, events = find_discrete(t0, t1, f)
+    
+    moonrise = moonset = None
+    for ti, event in zip(times, events):
+        if event == 1:  # 1 indicates rising
+            moonrise = ti.utc_strftime('%H:%M')
+        elif event == 0:  # 0 indicates setting
+            moonset = ti.utc_strftime('%H:%M')
+    
+    nitori['rise'] = moonrise if moonrise is not None else "N/A"
+    nitori['set'] = moonset if moonset is not None else "N/A"
 
     ctime = datetime.now().strftime('%H:%M:%S')
     return render_xhtml("astro.xhtml", title="Astronomy", data=nitori, time=ctime)

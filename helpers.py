@@ -5,6 +5,7 @@
 ################################
 from flask import render_template, make_response
 import feedparser
+import xmltodict
 import requests
 from datetime import datetime
 from time import mktime, time
@@ -55,6 +56,70 @@ def fetch_rss_meta(url):
         'date': datetime.fromtimestamp(int(mktime(d.feed.updated_parsed))).strftime('%d/%m/%Y %H:%M:%S')
     }
     return meta
+
+def parse_cap(url, geocode):
+    tenshi = []
+    r = requests.get(url)
+    if r.status_code != 200:
+        return None
+    
+    cap_data = xmltodict.parse(r.content)
+    alert = cap_data.get('alert', {})
+    info_blocks = alert.get('info', [])
+    if isinstance(info_blocks, dict):
+        info_blocks = [info_blocks]
+    
+    for info in info_blocks:
+        event = info.get('event', '')
+        areas = info.get('area')
+
+        # Only process Czech info blocks
+        if info.get('language') != 'cs':
+            continue
+        # Filter out event-less block (Žádný/Žádná/Žádné)
+        if event.startswith('Žádn'):
+            continue
+        
+        # Check if any area in the info block has the requested geocode
+        found_geocode = False
+        if areas:
+            # Normalize to list
+            areas = areas if isinstance(areas, list) else [areas]
+            for area in areas:
+                geocodes = area.get('geocode', [])
+                geocodes = geocodes if isinstance(geocodes, list) else [geocodes]
+                for gc in geocodes:
+                    if gc.get('value') == geocode:
+                        found_geocode = True
+                        break
+                if found_geocode:
+                    break
+        if not found_geocode:
+            continue
+
+        if info.get('onset'):
+            onset = datetime.fromisoformat(info.get('onset')).strftime('%d/%m/%Y %H:%M')
+        else:
+            onset = "an unknown date"
+        if info.get('expires'):
+            expires = datetime.fromisoformat(info.get('expires')).strftime('%d/%m/%Y %H:%M')
+        else:
+            expires = "an unknown date"
+        
+        # Append all the event data
+        tenshi.append({
+            "event": event,
+            "response": info.get('responseType'),
+            "urgency": info.get('urgency'),
+            "severity": info.get('severity'),
+            "certainty": info.get('certainty'),
+            "start": onset,
+            "end": expires,
+            "description": info.get('description'),
+            "instruction": info.get('instruction')
+        })
+
+    return tenshi
 
 ############################
 ##  Bakalari functions!!  ##
