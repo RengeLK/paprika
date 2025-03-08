@@ -1,5 +1,6 @@
 sessionkey = "somerandomlongstringthatlovesbeingchanged"  # used for encrypting session cookies
 bakaurl = "https://bakalari.spse4.cz/"  # api url for bakalari (xInfo)
+stravacode = 1234  # Strava.cz place code
 
 owmkey = "8634fds683f43dfs468"  # OpenWeatherMap API key
 openaikey = "sk-proj-letsgogambling!"  # OpenAI API key

@@ -10,16 +10,18 @@ from skyfield.api import load, Topos
 from skyfield.almanac import fraction_illuminated, moon_phase, MOON_PHASES, moon_phases, find_discrete, risings_and_settings
 from numpy import pi
 import requests
+import xmltodict
 import base64
 from urllib.parse import quote_plus
 from openai import OpenAI
-from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_userid, crws_userdesc, crws_combid, bakaurl, openaikey, openaimodel, openaiprompt, openainame, wlat, wlon, wele, wloc, woffset, calendar, capurl, capgeo
+from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_userid, crws_userdesc, crws_combid, bakaurl, openaikey, openaimodel, openaiprompt, openainame, wlat, wlon, wele, wloc, woffset, calendar, capurl, capgeo, stravacode
 from helpers import render_xhtml, format_delays, fetch_rss_feed, fetch_rss_meta, bakatoken_get, parse_cap
 gpt = OpenAI(api_key=openaikey)
 app = Flask(__name__)
 app.jinja_env.trim_blocks = True
 app.jinja_env.lstrip_blocks = True
 app.jinja_env.keep_trailing_newline = False
+app.jinja_env.add_extension('jinja2.ext.loopcontrols')
 app.secret_key = sessionkey
 tz_offset = timezone(timedelta(hours=woffset))
 ts = load.timescale()
@@ -378,7 +380,6 @@ def baka_grades():
         abort(404)
 
     yukari = bakatoken_get(session['username'])
-    #print(yukari)
     r = requests.get(f"{bakaurl}/api/3/marks", headers=yukari)
     dat = r.json()
     chimata = []
@@ -461,6 +462,16 @@ def finish_homework(hw_id):
         return redirect(url_for('baka_homework')), 303
     else:
         abort(500)
+
+# Strava code
+@app.route("/xinfo/strava")
+def strava():
+    r = requests.get(f"https://www.strava.cz/strava5/Jidelnicky/XML?zarizeni={stravacode}")
+    if r.status_code != 200:
+        return None
+
+    data = xmltodict.parse(r.content)
+    return render_xhtml("strava.xhtml", title="xInfo :: Strava", data=data['jidelnicky']['den'])
 
 # OpenAI code
 @app.route("/xinfo/patchai", methods=['GET', 'POST'])

@@ -7,7 +7,8 @@
     <i>Bakalari</i><br/>
     <a href="{{ url_for('baka_timetable') }}">Rozvrh</a>
     <a href="{{ url_for('baka_grades') }}">Znamky</a>
-    <a href="{{ url_for('baka_homework') }}">Ukoly</a><br/>
+    <a href="{{ url_for('baka_homework') }}">Ukoly</a>
+    <a href="{{ url_for('strava') }}">Strava</a><br/>
 
     {% if session['gptallow'] %}<a href="{{ url_for('patchai') }}">ChatGPT</a>{% endif %}
     <a href="{{ url_for('logout') }}">Logout</a>
