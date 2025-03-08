@@ -11,9 +11,14 @@
         <p><strong>{{ weather['temp'] }}</strong> ({{ weather['feels'] }}) /AQI {{ weather['aqi'] }}/</p>
         <p>{{ weather['main'] }} ({{ weather['condition'] }})</p>
         <p>P: {{ weather['pressure'] }}, H: {{ weather['humidity'] }}, clouds {{ weather['clouds'] }}</p>
-        <p>Wind: {{ weather['wind'] }} from {{ weather['direct'] }}</p><br/>
+        <p>Wind: {{ weather['wind'] }} from {{ weather['direct'] }}</p>
+        <p>Sunrise at {{ weather['sunrise'] }}</p>
+        <p>Sunset at {{ weather['sunset'] }}</p><br/>
 
         <b>Weather alerts for {{ location }}</b>
+        {% if not cap %}
+        <div class="cap"><p>It's empty here.. yay?</p></div>
+        {% endif %}
         {% for i in cap %}
         <div class="cap">
             <b>{{ i.event }} - {{ i.severity }} severity</b>
@@ -23,8 +28,5 @@
             <p>I: {{ i.instruction }}</p>
         </div>
         {% endfor %}
-
-        <p>Sunrise at {{ weather['sunrise'] }}</p>
-        <p>Sunset at {{ weather['sunset'] }}</p>
     </div>
 {% endblock %}

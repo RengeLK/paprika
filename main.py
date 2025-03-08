@@ -5,6 +5,7 @@
 ################################
 from flask import Flask, send_from_directory, abort, redirect, url_for, request, session, redirect
 from datetime import datetime, timezone, timedelta
+from time import mktime
 from skyfield.api import load, Topos
 from skyfield.almanac import fraction_illuminated, moon_phase, MOON_PHASES, moon_phases, find_discrete, risings_and_settings
 from numpy import pi
@@ -12,20 +13,20 @@ import requests
 import base64
 from urllib.parse import quote_plus
 from openai import OpenAI
-from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_userid, crws_userdesc, crws_combid, bakaurl, openaikey, openaiprompt, openainame, wlat, wlon, wele, wloc, woffset, calendar, capurl, capgeo
+from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_userid, crws_userdesc, crws_combid, bakaurl, openaikey, openaimodel, openaiprompt, openainame, wlat, wlon, wele, wloc, woffset, calendar, capurl, capgeo
 from helpers import render_xhtml, format_delays, fetch_rss_feed, fetch_rss_meta, bakatoken_get, parse_cap
 gpt = OpenAI(api_key=openaikey)
 app = Flask(__name__)
-app.jinja_env.trim_blocks = True  # Removes leading newlines inside blocks
-app.jinja_env.lstrip_blocks = True  # Strips leading spaces and tabs from blocks
-app.jinja_env.keep_trailing_newline = False  # (Optional) Prevents an extra trailing newline in output
+app.jinja_env.trim_blocks = True
+app.jinja_env.lstrip_blocks = True
+app.jinja_env.keep_trailing_newline = False
 app.secret_key = sessionkey
 tz_offset = timezone(timedelta(hours=woffset))
 ts = load.timescale()
 eph = load('de421.bsp')
 earth, moon, sun = eph['earth'], eph['moon'], eph['sun']
-observer = earth + Topos(latitude_degrees=wlat, longitude_degrees=wlon)
 location = Topos(latitude_degrees=wlat, longitude_degrees=wlon)
+observer = earth + location
 
 @app.errorhandler(401)
 def err401(error):
@@ -377,9 +378,35 @@ def baka_grades():
         abort(404)
 
     yukari = bakatoken_get(session['username'])
-    print(yukari)
+    #print(yukari)
+    r = requests.get(f"{bakaurl}/api/3/marks", headers=yukari)
+    dat = r.json()
+    chimata = []
 
-    return render_xhtml("baka_grades.xhtml", title="Baka :: Znamky")
+    for s in dat['Subjects']:
+        # Append basic info about subject and prepare list for marks
+        tenkyuu = {
+            'name': s['Subject']['Abbrev'],
+            'average': s['AverageText'],
+            'marks': []
+        }
+        for i in s['Marks']:
+            tenkyuu['marks'].append({
+                'date': datetime.strptime(i['MarkDate'], "%Y-%m-%dT%H:%M:%S%z").strftime("%d.%m.%Y"),
+                'caption': i['Caption'],
+                'mark': i['MarkText'],
+                'teacher': i['TeacherId'],
+                'type': f"{i['Type']} - {i['TypeNote']}",
+                'weight': i['Weight'],  # int
+                'new': i['IsNew'],  # bool
+                'confirmed': i['MarkConfirmationState'],
+                'id': i['Id']
+            })
+        chimata.append(tenkyuu)
+
+    print(chimata)
+    ctime = datetime.now().strftime('%H:%M:%S')
+    return render_xhtml("baka_grades.xhtml", title="Baka :: Znamky", data=chimata, time=ctime)
 
 @app.route("/xinfo/baka/homework")
 def baka_homework():
@@ -435,7 +462,7 @@ def finish_homework(hw_id):
     else:
         abort(500)
 
-# ChatGPT code
+# OpenAI code
 @app.route("/xinfo/patchai", methods=['GET', 'POST'])
 def patchai():
     # User is not logged in, serve fake 404
@@ -470,7 +497,7 @@ def patchai():
 
         print(f"Starting to process prompt of user {username}")
         compl = gpt.chat.completions.create(
-            model="gpt-4o-mini",
+            model=openaimodel,
             messages=messages,
             response_format={"type": "text"},
             temperature=1,

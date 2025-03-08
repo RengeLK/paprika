@@ -1,8 +1,23 @@
 {% extends "base.xhtml" %}
 
 {% block content %}
-    <p class="title">Znamky</p>
-    <p>Header</p><br/>
+    <p class="title">Znamky</p><hr class="solid"/>
+    
+    {% for s in data %}
+    <div class="mark">
+        <p><b>{{ s.name }}</b> -- {{ s.average }}</p><hr class="dotted"/>
+        {% for i in s['marks'] %}
+        <hr class="dotted"/>
+        {% if i.new %}
+        <p><b>{{ i.mark }}</b> (W{{ i.weight }}) || {{ i.caption }}</p>
+        {% else %}
+        <p>{{ i.mark }} (W{{ i.weight }}) || {{ i.caption }}</p>
+        {% endif %}
+        <p>{{ i.date }} || {{ i.type }}</p>
+        {% endfor %}
+    </div>
+    {% endfor %}
 
-    <p>Content</p>
+    <br/>
+    <p>Data fetched from Bakalari at {{ time }}</p>
 {% endblock %}

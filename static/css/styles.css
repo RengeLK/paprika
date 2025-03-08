@@ -58,6 +58,11 @@ img {
   margin-bottom: 2px;
 }
 
+.mark {
+  border-style: groove;
+  border-width: 2px 2px;
+}
+
 /********** News stuff *********/
 
 .summary {

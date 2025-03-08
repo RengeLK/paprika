@@ -3,6 +3,7 @@ bakaurl = "https://bakalari.spse4.cz/"  # api url for bakalari (xInfo)
 
 owmkey = "8634fds683f43dfs468"  # OpenWeatherMap API key
 openaikey = "sk-proj-letsgogambling!"  # OpenAI API key
+openaimodel = "gpt-4o-mini"  # Name of used OpenAI LLM
 openaiprompt = "You are a helpful assistant."  # OpenAI 'developer' prompt incl. in each request
 openainame = "Assistant"  # Name of assistant in patchai (display purposes only)
 

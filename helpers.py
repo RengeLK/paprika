@@ -79,6 +79,9 @@ def parse_cap(url, geocode):
         # Filter out event-less block (Žádný/Žádná/Žádné)
         if event.startswith('Žádn'):
             continue
+        # Filter out Dotok events (we hate Dotok)
+        if event == 'Dotok':
+            continue
         
         # Check if any area in the info block has the requested geocode
         found_geocode = False
