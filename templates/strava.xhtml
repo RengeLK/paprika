@@ -4,7 +4,7 @@
     <p class="title">Jidelnicek</p><hr class="solid"/>
 
     {% for d in data %}
-    {% if loop.index > 10 %}{% break %}{% endif %}
+    {% if loop.index > 5 %}{% break %}{% endif %}
     <div class="mark">
         <b>{{ d['@datum'] }}</b><hr class="dotted"/>
         {% for j in d['jidlo'] %}

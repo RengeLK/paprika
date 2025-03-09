@@ -178,7 +178,7 @@ def astro():
 def news():
     ctime = datetime.now().strftime('%H:%M:%S')
     cnt = 10
-    rssfeed = f'https://rss.lukynet.com/reuters/technology?key=paprika&limit={cnt}'  # RSSHub
+    rssfeed = f'https://rss.lukynet.com/nhk/news?key=paprika&limit={cnt}'  # RSSHub
 
     artlist = fetch_rss_feed(rssfeed, cnt)
     meta = fetch_rss_meta(rssfeed)
@@ -556,4 +556,4 @@ def custom_static(filename):
     return response
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=4048, debug=True)  # DEBUG IS ON!
+    app.run(host='0.0.0.0', port=4048, debug=False)
