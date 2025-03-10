@@ -178,9 +178,9 @@ def bakatoken_get(user_id):
 
     # Try refresh token first
     if bakatoken_validate(user_data) or bakatoken_refresh(user_data):
-        return {"Authorization": f"Bearer {user_data["bakatoken"]}"}
+        return {"Authorization": f"Bearer {user_data['bakatoken']}"}
     # If refresh fails, do a full login
     elif bakalogin(user_data):
-        return {"Authorization": f"Bearer {user_data["bakatoken"]}"}
+        return {"Authorization": f"Bearer {user_data['bakatoken']}"}
 
     return None  # Login failed
