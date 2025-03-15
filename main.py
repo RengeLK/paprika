@@ -14,7 +14,7 @@ import xmltodict
 import base64
 from urllib.parse import quote_plus
 from openai import OpenAI
-from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_userid, crws_userdesc, crws_combid, bakaurl, openaikey, openaimodel, openaiprompt, openainame, wlat, wlon, wele, wloc, woffset, calendar, capurl, capgeo, stravacode
+from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_userid, crws_userdesc, crws_combid, bakaurl, openaikey, openaimodel, openaiprompt, openainame, wlat, wlon, wele, wloc, woffset, calendar, capurl, capgeo, stravacode, rssfeed
 from helpers import render_xhtml, format_delays, fetch_rss_feed, fetch_rss_meta, bakatoken_get, parse_cap
 gpt = OpenAI(api_key=openaikey)
 app = Flask(__name__)
@@ -73,13 +73,8 @@ def dlsnd():
 # Serve the weather section
 @app.route("/weather")
 def weather():
-    # TODO: Actual location grabbing or something idk
-    lat = wlat
-    lon = wlon
-    loc = wloc
-
-    get = requests.get(f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={owmkey}&units=metric")
-    air = requests.get(f"https://api.openweathermap.org/data/2.5/air_pollution?lat={lat}&lon={lon}&appid={owmkey}")
+    get = requests.get(f"https://api.openweathermap.org/data/2.5/weather?lat={wlat}&lon={wlon}&appid={owmkey}&units=metric")
+    air = requests.get(f"https://api.openweathermap.org/data/2.5/air_pollution?lat={wlat}&lon={wlon}&appid={owmkey}")
     dat = get.json()
 
     weather_info = {
@@ -101,18 +96,13 @@ def weather():
     }
 
     capdat = parse_cap(capurl, capgeo)
-    return render_xhtml("weather.xhtml", title="Weather", weather=weather_info, location=loc, cap=capdat)
+    return render_xhtml("weather.xhtml", title="Weather", weather=weather_info, location=wloc, cap=capdat)
 
 @app.route("/weather/forecast")
 def forecast():
-    # TODO: Actual location grabbing or something idk
-    lat = wlat
-    lon = wlon
-    loc = wloc
     ctime = datetime.now().strftime('%H:%M:%S')
     cnt = 8  # amount of forecast data in timestamps (3-hour difference, 8 equals 24hrs of data)
-
-    get = requests.get(f"https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={owmkey}&units=metric&cnt={cnt}")
+    get = requests.get(f"https://api.openweathermap.org/data/2.5/forecast?lat={wlat}&lon={wlon}&appid={owmkey}&units=metric&cnt={cnt}")
     dat = get.json()
     
     weather_info = []
@@ -132,7 +122,7 @@ def forecast():
             'foretime': datetime.fromtimestamp(i['dt']).strftime('%H:%M')  # forecast data time
         })
 
-    return render_xhtml("forecast.xhtml", title="Forecast", weather=weather_info, location=loc, time=ctime)
+    return render_xhtml("forecast.xhtml", title="Forecast", weather=weather_info, location=wloc, time=ctime)
 
 @app.route("/weather/astro")
 def astro():
@@ -173,13 +163,10 @@ def astro():
     return render_xhtml("astro.xhtml", title="Astronomy", data=nitori, time=ctime)
 
 # Serve the news section
-#TODO: page system
 @app.route("/news")
 def news():
-    ctime = datetime.now().strftime('%H:%M:%S')
     cnt = 10
-    rssfeed = f'https://rss.lukynet.com/nhk/news?key=paprika&limit={cnt}'  # RSSHub
-
+    ctime = datetime.now().strftime('%H:%M:%S')
     artlist = fetch_rss_feed(rssfeed, cnt)
     meta = fetch_rss_meta(rssfeed)
     return render_xhtml("news.xhtml", title="News", articles=artlist, rssmeta=meta, time=ctime)
@@ -199,11 +186,7 @@ def xdos_conn():
     conninfo = []
 
     for i in dat['connInfo']['connections']:
-        sanae = {
-        'timel': i['timeLength'],
-        'spoje': []
-        }
-
+        sanae = {'timel': i['timeLength'], 'spoje': []}
         for train in i['trains']:
             '''
             Nevim proc, ale CHAPS je tak retardovanej ze nastupiste v 'route'
@@ -288,7 +271,6 @@ def logout():
 def xinfo_home():
     # User is not logged in, serve login form
     if 'username' not in session:
-        # abort(404)
         return redirect(url_for('xinfo_login'))
 
     # User IS logged in, serve xInfo
@@ -326,11 +308,7 @@ def baka_timetable():
         day_of_week = day['DayOfWeek']
         if day_of_week not in days_map:
             continue  # Skip if it's not a Monday-Friday schedule
-        
-        parsed_data['days'][day_of_week - 1] = {
-            'name': days_map[day_of_week],
-            'atoms': []
-        }
+        parsed_data['days'][day_of_week - 1] = {'name': days_map[day_of_week], 'atoms': []}
         
         for atom in day['Atoms']:
             if atom['Change']:  # it is time to celebrate
@@ -385,7 +363,6 @@ def baka_grades():
     chimata = []
 
     for s in dat['Subjects']:
-        # Append basic info about subject and prepare list for marks
         tenkyuu = {
             'name': s['Subject']['Abbrev'],
             'average': s['AverageText'],
@@ -405,7 +382,6 @@ def baka_grades():
             })
         chimata.append(tenkyuu)
 
-    print(chimata)
     ctime = datetime.now().strftime('%H:%M:%S')
     return render_xhtml("baka_grades.xhtml", title="Baka :: Znamky", data=chimata, time=ctime)
 
@@ -466,7 +442,6 @@ def finish_homework(hw_id):
 # Strava code
 @app.route("/xinfo/strava")
 def strava():
-    #r = requests.get(f"https://www.strava.cz/strava5/Jidelnicky/XML?zarizeni={stravacode}")
     user = users.get(session['username'])
     ran = f'{{"cislo":"{stravacode}","jmeno":"{user['stravauser']}","heslo":"{user['stravapass']}"}}'
     log = requests.post("https://app.strava.cz/api/login", data=ran)
@@ -474,8 +449,27 @@ def strava():
     chen = f'{{"cislo":"{stravacode}","sid":"{sid}","s5url":"https://wss52.strava.cz/WSStravne5_6/WSStravne5.svc"}}'
     r = requests.post("https://app.strava.cz/api/objednavky", data=chen)
 
-    data = xmltodict.parse(r.content)
-    return render_xhtml("strava.xhtml", title="xInfo :: Strava", data=data['jidelnicky']['den'])
+    # This code is extremely slow, but I'm too lazy to think of a better solution. Forgive me pls
+    data = r.json()
+    final = []
+    i = 0
+    while i < 5:
+        cirno = {'date': data[f"table{i}"][0]['datum'], 'chod': []}
+        for chod in data[f"table{i}"]:
+            if chod['pocet'] == 1: sel = True
+            else: sel = False
+            suika = {
+                "id": chod['id'],
+                "type": chod['druh_popis'],
+                "name": chod['nazev'],
+                "selected": sel
+
+            }
+            cirno['chod'].append(suika)
+        i += 1
+        final.append(cirno)
+
+    return render_xhtml("strava.xhtml", title="xInfo :: Strava", data=final)
 
 # OpenAI code
 @app.route("/xinfo/patchai", methods=['GET', 'POST'])
@@ -488,15 +482,12 @@ def patchai():
         abort(401)
 
     username = session['username']
-
     youmu = {'amt': 0, 'amt-in': 0, 'amt-ca': 0, 'amt-out': 0, 'msg': 'An error occurred!'}
 
     if request.method == 'POST':
         usrmsg = request.form.get('message')
-
         # Append user message to history
         users[username]["chathistory"].append({"role": "user", "content": usrmsg})
-
         # Prepare messages for GPT (system + chat history + latest message)
         messages = [
             {

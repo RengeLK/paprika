@@ -1,6 +1,7 @@
 sessionkey = "somerandomlongstringthatlovesbeingchanged"  # used for encrypting session cookies
 bakaurl = "https://bakalari.spse4.cz/"  # api url for bakalari (xInfo)
 stravacode = 1234  # Strava.cz place code
+rssfeed = "https://rss.example.com/?limit=10"  # RSS feed in use for news section
 
 owmkey = "8634fds683f43dfs468"  # OpenWeatherMap API key
 openaikey = "sk-proj-letsgogambling!"  # OpenAI API key
@@ -38,6 +39,9 @@ users = {  # used by xInfo auth
         ## Bakalari ##
         "bakauser": "paveln9c",
         "bakapass": "jsemretard69",
+        ## Strava ##
+        "stravauser": "john.doe",
+        "stravapass": "extremelyinsecure",
         ## DO NOT CHANGE ##
         ## THE FOLLOWING ##
         ##    SETTINGS   ##

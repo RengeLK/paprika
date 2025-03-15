@@ -4,12 +4,13 @@
     <p class="title">Jidelnicek</p><hr class="solid"/>
 
     {% for d in data %}
-    {% if loop.index > 5 %}{% break %}{% endif %}
     <div class="mark">
-        <b>{{ d['@datum'] }}</b><hr class="dotted"/>
-        {% for j in d['jidlo'] %}
-        {% if "dieta" not in j['@druh'] %}
-        <p>{{ j['@druh'] }} -- {{ j['@nazev'] }}</p>
+        <b>{{ d['date'] }}</b><hr class="dotted"/>
+        {% for i in d['chod'] %}
+        {% if i['selected'] %}
+        <p style="color: green;">{{ i['type'] }} -- {{ i['name'] }}</p>
+        {% else %}
+        <p>{{ i['type'] }} -- {{ i['name'] }}</p>
         {% endif %}
         {% endfor %}
     </div>

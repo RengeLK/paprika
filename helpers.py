@@ -121,7 +121,6 @@ def parse_cap(url, geocode):
             "description": info.get('description'),
             "instruction": info.get('instruction')
         })
-
     return tenshi
 
 ############################
