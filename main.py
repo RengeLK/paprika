@@ -466,9 +466,13 @@ def finish_homework(hw_id):
 # Strava code
 @app.route("/xinfo/strava")
 def strava():
-    r = requests.get(f"https://www.strava.cz/strava5/Jidelnicky/XML?zarizeni={stravacode}")
-    if r.status_code != 200:
-        return None
+    #r = requests.get(f"https://www.strava.cz/strava5/Jidelnicky/XML?zarizeni={stravacode}")
+    user = users.get(session['username'])
+    ran = f'{{"cislo":"{stravacode}","jmeno":"{user['stravauser']}","heslo":"{user['stravapass']}"}}'
+    log = requests.post("https://app.strava.cz/api/login", data=ran)
+    sid = log.json()['sid']
+    chen = f'{{"cislo":"{stravacode}","sid":"{sid}","s5url":"https://wss52.strava.cz/WSStravne5_6/WSStravne5.svc"}}'
+    r = requests.post("https://app.strava.cz/api/objednavky", data=chen)
 
     data = xmltodict.parse(r.content)
     return render_xhtml("strava.xhtml", title="xInfo :: Strava", data=data['jidelnicky']['den'])
