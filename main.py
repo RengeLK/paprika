@@ -14,7 +14,7 @@ import xmltodict
 import base64
 from urllib.parse import quote_plus
 from openai import OpenAI
-from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_userid, crws_userdesc, crws_combid, bakaurl, openaikey, openaimodel, openaiprompt, openainame, wlat, wlon, wele, wloc, woffset, calendar, capurl, capgeo, stravacode, rssfeed
+from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_userid, crws_userdesc, crws_combid, bakaurl, openaikey, openaimodel, openaiprompt, openainame, wlat, wlon, wele, wloc, woffset, calendar, capurl, capgeo, stravacode, rssfeed, port
 from helpers import render_xhtml, format_delays, fetch_rss_feed, fetch_rss_meta, bakatoken_get, parse_cap
 gpt = OpenAI(api_key=openaikey)
 app = Flask(__name__)
@@ -443,7 +443,7 @@ def finish_homework(hw_id):
 @app.route("/xinfo/strava")
 def strava():
     user = users.get(session['username'])
-    ran = f'{{"cislo":"{stravacode}","jmeno":"{user['stravauser']}","heslo":"{user['stravapass']}"}}'
+    ran = f'{{"cislo":"{stravacode}","jmeno":"{user["stravauser"]}","heslo":"{user["stravapass"]}"}}'
     log = requests.post("https://app.strava.cz/api/login", data=ran)
     sid = log.json()['sid']
     chen = f'{{"cislo":"{stravacode}","sid":"{sid}","s5url":"https://wss52.strava.cz/WSStravne5_6/WSStravne5.svc"}}'
@@ -551,4 +551,4 @@ def custom_static(filename):
     return response
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=4048, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=False)

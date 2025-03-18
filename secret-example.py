@@ -1,4 +1,5 @@
 sessionkey = "somerandomlongstringthatlovesbeingchanged"  # used for encrypting session cookies
+port = 4048  # port number used by the Flask server
 bakaurl = "https://bakalari.spse4.cz/"  # api url for bakalari (xInfo)
 stravacode = 1234  # Strava.cz place code
 rssfeed = "https://rss.example.com/?limit=10"  # RSS feed in use for news section

@@ -17,13 +17,13 @@ This assumes you have at least Python 3.11 installed.
 First, create a venv and install all packages:
 ```
 python -m venv venv
+$ source venv/bin/activate
+C:> .\venv\Scripts\activate.bat
 pip install -r requirements.txt
 ```
-Next, copy ```secret-example.py``` into ```secret.py``` and edit its contents
-as you need.
+Next, copy ```secret-example.py``` into ```secret.py``` and edit its contents as you need.
 
-Afterwards, simply run the program using ```python main.py``` or set up a WSGI server and you're good to go! If needed, you can change
-the port on the last line in ```main.py```.
+Afterwards, simply run the program using ```python main.py``` or set up a WSGI server and you're good to go!
 
 ## Contributions & LICENSE
 If you genuinely want to contribute, thank you! Feel free to submit a pull request.
