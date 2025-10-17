@@ -60,7 +60,7 @@ def downloads():
 
 @app.route("/dls/java")
 def dljars():
-    return render_xhtml("dlist.xhtml", title="Java ME DLs", atitle="MIDP 2.0 MIDlets", list=jarlist, type="java")
+    return render_xhtml("dlist.xhtml", title="Java ME DLs", atitle="JARs", list=jarlist, type="java")
 
 @app.route("/dls/img")
 def dlimg():
@@ -160,7 +160,7 @@ def astro():
     nitori['set'] = moonset if moonset is not None else "N/A"
 
     ctime = datetime.now().strftime('%H:%M:%S')
-    return render_xhtml("astro.xhtml", title="Astronomy", data=nitori, time=ctime)
+    return render_xhtml("astro.xhtml", title="Astro", data=nitori, time=ctime)
 
 # Serve the news section
 @app.route("/news")
@@ -322,14 +322,14 @@ def baka_timetable():
 
                 parsed_data['days'][day_of_week - 1]['atoms'].append({
                     'change': True,
-                    'type': atom['Change'].get('ChangeType', 'NaN'),
-                    'desc': atom['Change'].get('Description', 'NaN'),
+                    'type': atom['Change'].get('ChangeType', 'N'),
+                    'desc': atom['Change'].get('Description', 'N'),
                     'color': color,
                     'id': hours.get(atom.get('HourId'), '0'),
-                    'name': subjects.get(atom.get('SubjectId'), 'NaN'),
-                    'room': rooms.get(atom.get('RoomId'), 'NaN'),
-                    'teacher': teachers.get(atom.get('TeacherId'), 'NaN'),
-                    'class': classes.get(atom['GroupIds'][0], 'NaN') if atom.get('GroupIds') else 'NaN'
+                    'name': subjects.get(atom.get('SubjectId'), 'N'),
+                    'room': rooms.get(atom.get('RoomId'), '0'),
+                    'teacher': teachers.get(atom.get('TeacherId'), 'N'),
+                    'class': classes.get(atom['GroupIds'][0], '0') if atom.get('GroupIds') else '0'
                 })
             else:
                 hour_id = atom.get('HourId')
@@ -341,10 +341,10 @@ def baka_timetable():
                 parsed_data['days'][day_of_week - 1]['atoms'].append({
                     'change': False,
                     'id': hours.get(hour_id, '0'),
-                    'name': subjects.get(subject_id, 'NaN'),
-                    'room': rooms.get(room_id, 'NaN'),
-                    'teacher': teachers.get(teacher_id, 'NaN'),
-                    'class': classes.get(class_id, 'NaN')
+                    'name': subjects.get(subject_id, 'N'),
+                    'room': rooms.get(room_id, '0'),
+                    'teacher': teachers.get(teacher_id, 'N'),
+                    'class': classes.get(class_id, '0')
                 })
 
     parsed_data['cycle'] = data['Cycles'][0]['Abbrev'] + ' (' + data['Cycles'][0]['Name'] + ')'
@@ -423,7 +423,7 @@ def baka_homework():
         })
 
     ctime = datetime.now().strftime('%H:%M:%S')
-    return render_xhtml("baka_homework.xhtml", title="Baka :: Ukoly", hw=hwinfo, time=ctime)
+    return render_xhtml("baka_homework.xhtml", title="Baka :: Ukol!", hw=hwinfo, time=ctime)
 
 @app.route("/xinfo/baka/homework/finish/<hw_id>", methods=["POST"])
 def finish_homework(hw_id):
@@ -526,9 +526,9 @@ def patchai():
         youmu['amt-ca'] = compl.usage.prompt_tokens_details.cached_tokens
         youmu['amt-out'] = compl.usage.completion_tokens
 
-        return render_xhtml("patchai.xhtml", title="xInfo :: ChatGPT", history=users[username]["chathistory"], lol=username, assname=openainame, resp=youmu)
+        return render_xhtml("patchai.xhtml", title="xInfo :: Chat", history=users[username]["chathistory"], lol=username, assname=openainame, resp=youmu)
 
-    return render_xhtml("patchai.xhtml", title="xInfo :: ChatGPT", history=users[username]["chathistory"], lol=username, assname=openainame)
+    return render_xhtml("patchai.xhtml", title="xInfo :: Chat", history=users[username]["chathistory"], lol=username, assname=openainame)
 
 @app.route("/xinfo/patchai/clear", methods=['POST'])
 def patchai_clear():
@@ -547,8 +547,9 @@ def patchai_clear():
 @app.route('/static/css/<path:filename>')
 def custom_static(filename):
     response = send_from_directory('static/css', filename)
-    response.headers['Cache-Control'] = 'public, max-age=86400'  # 1d
+    response.headers['Cache-Control'] = 'public, max-age=604800'  # 1w
     return response
 
 if __name__ == "__main__":
+
     app.run(host='0.0.0.0', port=port, debug=False)
