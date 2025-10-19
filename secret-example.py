@@ -1,6 +1,6 @@
 sessionkey = "somerandomlongstringthatlovesbeingchanged"  # used for encrypting session cookies
 port = 4048  # port number used by the Flask server
-bakaurl = "https://bakalari.spse4.cz/"  # api url for bakalari (xInfo)
+bakaurl = "https://bakalari.tss.cz/"  # api url for bakalari (xInfo)
 stravacode = 1234  # Strava.cz place code
 rssfeed = "https://rss.example.com/?limit=10"  # RSS feed in use for news section
 
@@ -16,14 +16,13 @@ crws_combid = "PID"  # combination id as defined in CRWS docs
 
 wlat = 0  # GPS latitude for weather
 wlon = 0  # GPS longitude for weather
-wele = 0  # Elevation for weather in meters
 wloc = 'Null Island'  # Displayed name of weather location
 woffset = 0  # Timezone offset for weather, used sometimes
 capurl = "https://example.com/cap.xml"  # URL for CAP alerts
 capgeo = "69420"  # Geocode for CAP alerts
 
 jarlist = [  # manual list of all jars present in /dls/java
-    {'name': 'Test game', 'uri': 'test.jar'}
+    {'name': 'Test game', 'uri': 'test.jad'}
 ]
 imglist = [  # same but img
     {'name': 'Test wallpaper (176x220)', 'uri': 'test.png'}
@@ -34,7 +33,6 @@ sndlist = [  # same but snd
 
 users = {  # used by xInfo auth
     "admin9": {
-        "username": "admin9",  # This NEEDS to be identical to the previous line
         "password": "cirnoIZdaBEST",
         "gptallow": False,  # Allow access to /xinfo/patchai
         ## Bakalari ##

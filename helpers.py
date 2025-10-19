@@ -17,7 +17,6 @@ def render_xhtml(template_name, **context):
     resp = make_response(render_template(template_name, **context))
     resp.headers['X-Bara'] = 'pica'
     resp.content_type = 'application/xhtml+xml'
-    # resp.headers['Cache-Control'] = 'public, max-age=60'  # 1m
     resp.headers['Cache-Control'] = 'no-cache'  # cache but revalidate
     return resp
 

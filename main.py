@@ -5,16 +5,12 @@
 ################################
 from flask import Flask, send_from_directory, abort, redirect, url_for, request, session, redirect
 from datetime import datetime, timezone, timedelta
-from time import mktime
 from skyfield.api import load, Topos
-from skyfield.almanac import fraction_illuminated, moon_phase, MOON_PHASES, moon_phases, find_discrete, risings_and_settings
-from numpy import pi
+from skyfield.almanac import fraction_illuminated, MOON_PHASES, moon_phases, find_discrete, risings_and_settings
 import requests
-import xmltodict
-import base64
 from urllib.parse import quote_plus
 from openai import OpenAI
-from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_userid, crws_userdesc, crws_combid, bakaurl, openaikey, openaimodel, openaiprompt, openainame, wlat, wlon, wele, wloc, woffset, calendar, capurl, capgeo, stravacode, rssfeed, port
+from secret import owmkey, sessionkey, jarlist, imglist, sndlist, users, crws_userid, crws_userdesc, crws_combid, bakaurl, openaikey, openaimodel, openaiprompt, openainame, wlat, wlon, wloc, woffset, calendar, capurl, capgeo, stravacode, rssfeed, port
 from helpers import render_xhtml, format_delays, fetch_rss_feed, fetch_rss_meta, bakatoken_get, parse_cap
 gpt = OpenAI(api_key=openaikey)
 app = Flask(__name__)
@@ -60,7 +56,7 @@ def downloads():
 
 @app.route("/dls/java")
 def dljars():
-    return render_xhtml("dlist.xhtml", title="Java ME DLs", atitle="JARs", list=jarlist, type="java")
+    return render_xhtml("dlist.xhtml", title="Java DLs", atitle="JARs", list=jarlist, type="java")
 
 @app.route("/dls/img")
 def dlimg():
@@ -274,7 +270,7 @@ def xinfo_home():
         return redirect(url_for('xinfo_login'))
 
     # User IS logged in, serve xInfo
-    return render_xhtml("xinfo.xhtml", title="xInfo :: Home", session=users[session['username']])
+    return render_xhtml("xinfo.xhtml", title="xInfo :: Home", session=session['username'])
 
 # Bakalari code
 @app.route("/xinfo/baka/timetable")
@@ -315,10 +311,8 @@ def baka_timetable():
                 chtype = atom['Change']['ChangeType']
                 if chtype == 'Canceled':
                     color = 'green'
-                elif chtype == 'Substitution':
-                    color = 'red'
                 else:
-                    color = 'yellow'
+                    color = 'red'
 
                 parsed_data['days'][day_of_week - 1]['atoms'].append({
                     'change': True,
@@ -329,7 +323,7 @@ def baka_timetable():
                     'name': subjects.get(atom.get('SubjectId'), 'N'),
                     'room': rooms.get(atom.get('RoomId'), '0'),
                     'teacher': teachers.get(atom.get('TeacherId'), 'N'),
-                    'class': classes.get(atom['GroupIds'][0], '0') if atom.get('GroupIds') else '0'
+                    'class': classes.get(atom['GroupIds'][0], 'N') if atom.get('GroupIds') else 'N'
                 })
             else:
                 hour_id = atom.get('HourId')
@@ -344,7 +338,7 @@ def baka_timetable():
                     'name': subjects.get(subject_id, 'N'),
                     'room': rooms.get(room_id, '0'),
                     'teacher': teachers.get(teacher_id, 'N'),
-                    'class': classes.get(class_id, '0')
+                    'class': classes.get(class_id, 'N')
                 })
 
     parsed_data['cycle'] = data['Cycles'][0]['Abbrev'] + ' (' + data['Cycles'][0]['Name'] + ')'
@@ -551,5 +545,4 @@ def custom_static(filename):
     return response
 
 if __name__ == "__main__":
-
     app.run(host='0.0.0.0', port=port, debug=False)

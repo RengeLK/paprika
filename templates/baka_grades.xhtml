@@ -9,11 +9,11 @@
         {% for i in s['marks'] %}
         <hr class="dotted"/>
         {% if i.new %}
-        <p><b>{{ i.mark }}</b> (W{{ i.weight }}) || {{ i.caption }}</p>
+        <p><b>{{ i.mark }}</b> || {{ i.caption }}</p>
         {% else %}
-        <p>{{ i.mark }} (W{{ i.weight }}) || {{ i.caption }}</p>
+        <p>{{ i.mark }} || {{ i.caption }}</p>
         {% endif %}
-        <p>{{ i.date }} || {{ i.type }}</p>
+        <p>{{ i.date }} || Váha {{ i.weight }}</p>
         {% endfor %}
     </div>
     {% endfor %}
