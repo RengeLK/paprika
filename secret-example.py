@@ -34,6 +34,7 @@ sndlist = [  # same but snd
 users = {  # used by xInfo auth
     "admin9": {
         "password": "cirnoIZdaBEST",
+        "apitoken": "reallylongandsecurestring",  # used for auth in the API section. Make sure to change!!
         "gptallow": False,  # Allow access to /xinfo/patchai
         ## Bakalari ##
         "bakauser": "paveln9c",

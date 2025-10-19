@@ -4,6 +4,7 @@
 ## -renge 2024-2025           ##
 ################################
 from flask import render_template, make_response
+import xml.etree.ElementTree as ET
 import feedparser
 import xmltodict
 import requests
@@ -20,6 +21,26 @@ def render_xhtml(template_name, **context):
     resp.headers['Cache-Control'] = 'no-cache'  # cache but revalidate
     return resp
 
+def render_api(xml):
+    resp = make_response(xml)
+    resp.headers['X-Bara'] = 'pica'
+    resp.content_type = 'application/xml'
+    resp.headers['Cache-Control'] = 'no-cache'  # cache but revalidate
+    return resp
+
+def dict_to_element(root: ET.Element, dict: dict):
+    for i, j in dict.items():
+        if type(j) is dict:
+            temp = ET.SubElement(root, i)
+            dict_to_element(temp, j)
+        elif type(j) is list:
+            for a in j:
+                temp = ET.SubElement(root, i)
+                dict_to_element(temp, a)
+        else:
+            ET.SubElement(root, i).text = j
+    return root
+
 # Format delays
 def format_delays(delay):
     if delay == -1:
@@ -31,7 +52,7 @@ def format_delays(delay):
     return yuuka
 
 # Format data from RSS feeds for display
-def fetch_rss_feed(url, cnt):
+def fetch_rss_feed(url, cnt, api = False):
     feed = feedparser.parse(url)
     articles = []
     marisa = cnt
@@ -39,12 +60,19 @@ def fetch_rss_feed(url, cnt):
     for entry in feed.entries:
         if marisa == 0:
             break
-        articles.append({
-            "title": entry.title,
-            "link": entry.link,
-            "summary": entry.summary if "summary" in entry else "",
-            "published": datetime.fromtimestamp(int(mktime(entry.published_parsed))).strftime('%d/%m/%Y %H:%M:%S') if "published_parsed" in entry else "an unknown date"  # I am sorry for creating this monstrosity
-        })
+        if api:
+            articles.append({
+                "title": entry.title,
+                "desc": entry.summary if "summary" in entry else "",
+                "published": datetime.fromtimestamp(int(mktime(entry.published_parsed))).strftime('%d/%m %H:%M') if "published_parsed" in entry else "unknown"
+            })
+        else:
+            articles.append({
+                "title": entry.title,
+                "link": entry.link,
+                "summary": entry.summary if "summary" in entry else "",
+                "published": datetime.fromtimestamp(int(mktime(entry.published_parsed))).strftime('%d/%m/%Y %H:%M:%S') if "published_parsed" in entry else "an unknown date"  # I am sorry for creating this monstrosity
+            })
         marisa -= 1
     return articles
 

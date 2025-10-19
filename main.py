@@ -121,7 +121,7 @@ def forecast():
     return render_xhtml("forecast.xhtml", title="Forecast", weather=weather_info, location=wloc, time=ctime)
 
 @app.route("/weather/astro")
-def astro():
+def astro(api = False):
     nitori = {}
     now = datetime.now(tz_offset)
     t = ts.utc(now)
@@ -156,6 +156,8 @@ def astro():
     nitori['set'] = moonset if moonset is not None else "N/A"
 
     ctime = datetime.now().strftime('%H:%M:%S')
+    if api:
+        return nitori
     return render_xhtml("astro.xhtml", title="Astro", data=nitori, time=ctime)
 
 # Serve the news section
@@ -173,9 +175,13 @@ def xdos():
     return render_xhtml("xdos.xhtml", title="xDOS", combid=crws_combid)
 
 @app.route("/xdos/conn", methods=['POST'])
-def xdos_conn():
-    connfrom = quote_plus(request.form.get('from'))
-    connto = quote_plus(request.form.get('to'))
+def xdos_conn(api = False, frm = None, to = None):
+    if api:
+        connfrom = frm
+        connto = to
+    else:
+        connfrom = quote_plus(request.form.get('from'))
+        connto = quote_plus(request.form.get('to'))
     cnt = 3
     r = requests.get(f"https://ext.crws.cz/api/{crws_combid}/connections?from={connfrom}&to={connto}&maxCount={cnt}&userId={crws_userid}&userDesc={crws_userdesc}&lang=0")  # 0 = CZ, 1 = EN
     dat = r.json()
@@ -214,11 +220,16 @@ def xdos_conn():
     truefrom = dat['fromObjects'][0]['timetableObject']['item']['name']
     trueto = dat['toObjects'][0]['timetableObject']['item']['name']
     ctime = datetime.now().strftime('%H:%M:%S')
+    if api:
+        return conninfo
     return render_xhtml("xdos_conn.xhtml", title="xDOS conns", conns=conninfo, aunn=truefrom, komano=trueto, time=ctime)
 
 @app.route("/xdos/dep", methods=['POST'])
-def xdos_dep():
-    connfrom = quote_plus(request.form.get('from'))
+def xdos_dep(api = False, frm = None):
+    if api:
+        connfrom = frm
+    else:
+        connfrom = quote_plus(request.form.get('from'))
     cnt = 10
     r = requests.get(f"https://ext.crws.cz/api/{crws_combid}/departures?from={connfrom}&maxCount={cnt}&userId={crws_userid}&userDesc={crws_userdesc}&lang=0")  # 0 = CZ, 1 = EN
     dat = r.json()
@@ -236,6 +247,8 @@ def xdos_dep():
 
     truefrom = dat['fromObjects']['timetableObject']['item']['name']
     ctime = datetime.now().strftime('%H:%M:%S')
+    if api:
+        return depinfo
     return render_xhtml("xdos_dep.xhtml", title="xDOS deps", deps=depinfo, aunn=truefrom, time=ctime)
 
 # Serve the xInfo (account) section
@@ -543,6 +556,8 @@ def custom_static(filename):
     response = send_from_directory('static/css', filename)
     response.headers['Cache-Control'] = 'public, max-age=604800'  # 1w
     return response
+
+import api
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=port, debug=False)
