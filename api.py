@@ -172,4 +172,67 @@ def api_grades():
     return render_api(xml_str)
 
 
-# TODO: baka timetable
+@app.route('/api/baka/timetable')
+def api_timetable():
+    token = request.args.get('token')
+    user = None
+    for i, j in users.items():
+        if token == j["apitoken"]:
+            user = i
+    if not user:
+        abort("401")
+
+    yukari = bakatoken_get(user)
+    r = requests.get(f"{bakaurl}/api/3/timetable/actual", headers=yukari)
+    days_map = {1: 'Pondělí', 2: 'Úterý', 3: 'Středa', 4: 'Čtvrtek', 5: 'Pátek'}
+    hour_map = []
+    parsed_data = {'days': {}}
+    data = r.json()
+
+    for i in data['Hours']:
+        hour_map.append({
+            'id': i['Caption'],
+            'start': i['BeginTime'],
+            'end': i['EndTime']
+        })
+
+    # Create a lookup for types of content
+    hours = {hour['Id']: hour['Caption'] for hour in data.get('Hours', [])}
+    subjects = {sub['Id']: sub['Abbrev'] for sub in data.get('Subjects', [])}
+    teachers = {t['Id']: t['Abbrev'] for t in data.get('Teachers', [])}
+    rooms = {r['Id']: r['Abbrev'] for r in data.get('Rooms', [])}
+    
+    for day in data['Days']:
+        day_of_week = day['DayOfWeek']
+        if day_of_week not in days_map:
+            continue  # Skip if it's not a Monday-Friday schedule
+        parsed_data['days'][day_of_week - 1] = {'name': days_map[day_of_week], 'atoms': []}
+        
+        for atom in day['Atoms']:
+            if atom['Change']:  # it is time to celebrate
+                parsed_data['days'][day_of_week - 1]['atoms'].append({
+                    'change': "T",
+                    'id': hours.get(atom.get('HourId'), '0'),
+                    'type': atom['Change'].get('ChangeType', 'N'),
+                    'name': subjects.get(atom.get('SubjectId'), 'N'),
+                    'room': rooms.get(atom.get('RoomId'), '0'),
+                    'teacher': teachers.get(atom.get('TeacherId'), 'N')
+                })
+            else:
+                parsed_data['days'][day_of_week - 1]['atoms'].append({
+                    'change': "F",
+                    'id': hours.get(atom.get('HourId'), '0'),
+                    'name': subjects.get(atom.get('SubjectId'), 'N'),
+                    'room': rooms.get(atom.get('RoomId'), '0'),
+                    'teacher': teachers.get(atom.get('TeacherId'), 'N')
+                })
+
+    grd = ET.Element("days")
+    for i in parsed_data["days"].values():
+        new = ET.SubElement(grd, "day")
+        new.set("name", i["name"])
+        del i["name"]
+        dict_to_element(new, i)
+
+    xml_str = ET.tostring(grd, encoding="utf-8").decode("utf-8")
+    return render_api(xml_str)
