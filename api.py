@@ -75,14 +75,14 @@ def api_weather():
 
     # Create root
     wtr = ET.Element("weather")
-    ET.SubElement(wtr, "time").text = ctime
+    ET.SubElement(wtr, "curtime").text = ctime
 
     # Add info
     cur = ET.SubElement(wtr, "current")
     dict_to_element(cur, current)
     base = ET.SubElement(wtr, "forecast")
     for i in forecast:
-        new = ET.SubElement(base, "iter")
+        new = ET.SubElement(base, "time")
         dict_to_element(new, i)
     ast = ET.SubElement(wtr, "moon")
     dict_to_element(ast, nitori)
@@ -98,11 +98,11 @@ def api_news():
     d = feedparser.parse(rssfeed)
 
     nws = ET.Element("news")
-    ET.SubElement(nws, "title").text = d.feed.title
+    ET.SubElement(nws, "feedtitle").text = d.feed.title
     ET.SubElement(nws, "date").text = datetime.fromtimestamp(int(mktime(d.feed.updated_parsed))).strftime('%H:%M')
     lol = ET.SubElement(nws, "articles")
     for i in artlist:
-        new = ET.SubElement(lol, "iter")
+        new = ET.SubElement(lol, "article")
         dict_to_element(new, i)
 
     xml_str = ET.tostring(nws, encoding="utf-8").decode("utf-8")
@@ -128,10 +128,14 @@ def api_deps():
     snae = xdos_dep(True, frm)
 
     con = ET.Element("deps")
-    ET.SubElement(con, "time").text = datetime.now().strftime("%H:%M")
+    ET.SubElement(con, "curtime").text = datetime.now().strftime("%H:%M")
+    counter = 1
     for i in snae:
-        new = ET.SubElement(con, "iter")
+        if counter > 6:  # this could probably be better
+            break
+        new = ET.SubElement(con, "dep")
         dict_to_element(new, i)
+        counter += 1
 
     xml_str = ET.tostring(con, encoding="utf-8").decode("utf-8")
     return render_api(xml_str)
